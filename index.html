@@ -347,7 +347,7 @@ function viewRingkasan(d){
   const lowStock = d.inventory.filter(i=>i.stock<=i.minStock);
 
   return `
-    ${header("Ringkasan Usaha","Gambaran umum performa Elfa Baby Spa Anda")}
+    ${header("Ringkasan Usaha","Gambaran umum performa Ulfa Baby Spa")}
     <div class="kpi-grid">
       ${kpiCard("Total Pendapatan", fmtIDR(totalRevenue), "wallet", "var(--sage)")}
       ${kpiCard("Total Pengeluaran", fmtIDR(totalExpense), "down", "var(--blush)")}
