@@ -279,7 +279,7 @@ function render(){
           <img src="icon.png" alt="Logo Elfa Baby Spa" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.style.display='none';this.parentElement.innerHTML='👶';">
         </div>
         <div>
-          <div class="brand-title fx-display">Monitor Usaha</div>
+          <div class="brand-title fx-display">Dashboard</div>
           <div class="brand-sub">ULFA BABY SPA</div>
         </div>
       </div>
@@ -452,7 +452,7 @@ function viewTransaksi(d){
   const pg = paginate(sorted, state.txPage, 6);
 
   return `
-    ${header("Transaksi & Booking","Catat setiap kunjungan dan layanan yang terjual")}
+    ${header("Transaksi & Booking","Buat catat setiap kunjungan dan layanan yang terjual")}
     <div class="fx-card">
       <div class="form-grid">
         <div class="field"><span class="field-label">Tanggal</span><input class="fx-input" type="date" id="tx-date" value="${todayISO()}"></div>
@@ -527,7 +527,7 @@ function bindTransaksi(){
           </table>
           <hr style="border-dash:dashed; border-width:1px 0 0 0;">
           <p style="font-size:14px; font-weight:bold; margin:8px 0; color:#E85D88;">Total: ${fmtIDR(tx.amount)}</p>
-          <p style="font-size:10px; margin-top:12px;">Terima kasih atas kunjungan Anda!</p>
+          <p style="font-size:10px; margin-top:12px;">Terima kasih :)</p>
         </div>
       `;
       window.print();
@@ -555,13 +555,13 @@ function bindTransaksi(){
 /* ---------- LAYANAN & PAKET ---------- */
 function viewLayanan(d){
   return `
-    ${header("Layanan & Paket","Kelola daftar layanan spa dan paket membership pelanggan")}
+    ${header("Layanan & Paket","Buat elola daftar layanan spa dan paket membership pelanggan")}
     <div class="fx-card">
       <div class="card-title">Daftar Layanan</div>
       <div class="form-grid">
         <div class="field"><span class="field-label">Nama layanan</span><input class="fx-input" id="svc-name" placeholder="mis. Baby Massage"></div>
         <div class="field"><span class="field-label">Kategori</span><select class="fx-input" id="svc-category"><option>Bayi</option><option>Ibu</option><option>Paket</option></select></div>
-        <div class="field"><span class="field-label">Harga (Rp)</span><input class="fx-input" type="number" id="svc-price" placeholder="120000"></div>
+        <div class="field"><span class="field-label">Harga (Rp)</span><input class="fx-input" type="number" id="svc-price" placeholder="10000000"></div>
         <div class="field"><span class="field-label">Durasi (menit)</span><input class="fx-input" type="number" id="svc-duration" placeholder="45"></div>
         <button class="fx-btn" id="svc-add">${ICONS.plus} Tambah</button>
       </div>
