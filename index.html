@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Usaha — Ulfa Baby Spa</title>
+<link rel="icon" type="image/jpeg" href="icon.png">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    /* Skema Warna Disesuaikan dengan Logo Ulfa Baby Spa (Pink Rose & Aqua Cyan) */
+    --bg:#FAF0F2; 
+    --panel:#FFFFFF; 
+    --sidebar:#5B2938; 
+    --sidebarSoft:#733748;
+    --sage:#E85D88; /* Primary Pink Rose */
+    --sageDark:#C9426B; /* Darker Pink */
+    --aqua:#4FA7B2; /* Aqua Cyan dari tulisan .babyspa */
+    --aquaDark:#388791;
+    --blush:#F4A8BF; 
+    --amber:#D9A548;
+    --ink:#3D2A30; 
+    --inkSoft:#8C757D; 
+    --line:#EFE0E4; 
+    --danger:#C4604D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  .fx-display{font-family:Georgia,'Iowan Old Style','Palatino Linotype',serif;}
+  #app{display:flex;min-height:100vh;}
+  .sidebar{width:220px;background:var(--sidebar);color:#FDEEF2;padding:22px 14px;display:flex;flex-direction:column;gap:22px;flex-shrink:0;}
+  .brand{display:flex;align-items:center;gap:9px;padding:0 6px;}
+  .brand-icon{width:38px;height:38px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:2px;overflow:hidden;}
+  .brand-title{font-size:15.5px;font-weight:600;line-height:1.1;color:#fff;}
+  .brand-sub{font-size:10.5px;color:var(--blush);letter-spacing:.03em;font-weight:600;}
+  .navlist{display:flex;flex-direction:column;gap:3px;}
+  .navbtn{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;border:none;cursor:pointer;text-align:left;
+    background:transparent;color:#E8CDD5;font-size:13.5px;font-weight:500;white-space:nowrap;font-family:inherit;}
+  .navbtn.active{background:var(--sidebarSoft);color:#fff;font-weight:600;}
+  .navbtn:hover:not(.active){background:rgba(255,255,255,0.08);}
+  .footer-note{margin-top:auto;font-size:11px;color:#C4A9B2;padding:0 6px;}
+  main{flex:1;padding:26px 30px;min-width:0;}
+  .section-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;gap:12px;flex-wrap:wrap;}
+  .section-title{font-size:24px;font-weight:600;margin:0;color:var(--ink);}
+  .section-sub{font-size:13px;color:var(--inkSoft);margin-top:3px;}
+  .fx-card{background:var(--panel);border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(91,41,56,0.06);margin-bottom:16px;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:20px;}
+  .kpi-card{background:var(--panel);border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(91,41,56,0.06);display:flex;flex-direction:column;gap:8px;min-width:0;}
+  .kpi-top{display:flex;justify-content:space-between;align-items:center;}
+  .kpi-label{font-size:12px;color:var(--inkSoft);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .kpi-icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .kpi-value{font-family:'Fraunces',serif;font-size:22px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end;margin-bottom:6px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field-label{font-size:11.5px;font-weight:600;color:var(--inkSoft);text-transform:uppercase;letter-spacing:.03em;}
+  .fx-input{font-family:inherit;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;background:#fff;color:var(--ink);outline:none;width:100%;}
+  .fx-input:focus{border-color:var(--sage);box-shadow:0 0 0 3px rgba(232,93,136,.15);}
+  .fx-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:var(--sage);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.2s;}
+  .fx-btn:hover{background:var(--sageDark);}
+  .fx-btn-mini{padding:4px 9px;font-size:12px;border-radius:8px;}
+  .fx-btn-ghost{background:transparent;color:var(--danger);border:none;cursor:pointer;padding:6px;border-radius:8px;display:inline-flex;}
+  .fx-btn-ghost:hover{background:rgba(196,96,77,.1);}
+  table.fx-table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  .fx-table th{text-align:left;color:var(--inkSoft);font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;border-bottom:1px solid var(--line);}
+  .fx-table td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle;}
+  .fx-table tr:last-child td{border-bottom:none;}
+  .empty-row td{text-align:center;padding:24px 10px;color:var(--inkSoft);font-size:13px;}
+  .charts-row{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;}
+  .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--inkSoft);}
+  .legend-dot{width:8px;height:8px;border-radius:999px;flex-shrink:0;}
+  .badge{font-size:12px;padding:3px 9px;border-radius:999px;font-weight:600;}
+  .badge-low{background:#FBF0DC;color:#8A5A1E;}
+  .badge-ok{background:#FDEBF0;color:var(--sageDark);}
+  .low-stock-card{border-left:4px solid var(--amber);}
+  .low-alert-title{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;margin-bottom:10px;color:#8A5A1E;}
+  .pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+  .pkg-card{border:1px solid var(--line);border-radius:12px;padding:14px;}
+  .pkg-bar{height:8px;border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:8px;}
+  .pkg-bar-fill{height:100%;border-radius:999px;background:var(--sage);}
+  .card-title{font-weight:600;font-size:14px;margin-bottom:12px;}
+
+  /* --- UI/UX Enhancements (Toast & Pagination) --- */
+  #toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+  .toast{pointer-events:auto;min-width:240px;padding:12px 18px;border-radius:12px;background:#3D2A30;color:#fff;font-size:13px;font-weight:500;box-shadow:0 4px 12px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;animation:toastIn 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);}
+  .toast-success{background:#5B2938;border-left:4px solid #E85D88;}
+  .toast-error{background:#5A322E;border-left:4px solid #C4604D;}
+  .toast-info{background:#3D2A30;border-left:4px solid #4FA7B2;}
+  @keyframes toastIn{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+  @keyframes toastOut{from{transform:translateY(0);opacity:1;}to{transform:translateY(20px);opacity:0;}}
+
+  .pagination-wrap{display:flex;justify-content:space-between;align-items:center;padding-top:14px;margin-top:10px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--inkSoft);}
+  .pagination-btns{display:flex;gap:6px;}
+
+  @media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area { position: absolute; left: 0; top: 0; width: 100%; font-family: monospace; }
+  }
+
+  @media (max-width:760px){
+    #app{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:10px;align-items:center;}
+    .sidebar .brand{display:none;}
+    .navlist{flex-direction:row;gap:6px;}
+    .footer-note{display:none;}
+    .charts-row{grid-template-columns:1fr;}
+    #toast-container{bottom:16px;right:16px;left:16px;}
+    .toast{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast-container"></div>
+<div id="print-area"></div>
+
+<script>
+/* ---------- helpers ---------- */
+const STORAGE_KEY = "spa_monitor_data_v1";
+const uid = () => Math.random().toString(36).slice(2,10);
+const todayISO = () => new Date().toISOString().slice(0,10);
+const fmtIDR = (n) => "Rp " + Math.round(n||0).toLocaleString("id-ID");
+const fmtDate = (d) => new Date(d).toLocaleDateString("id-ID",{day:"2-digit",month:"short",year:"numeric"});
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Palette warna grafik disesuaikan (Pink, Aqua, Amber, Lavender, Warm Coral)
+const CATEGORY_COLORS = ["#E85D88","#4FA7B2","#D9A548","#A87CA0","#E7A99A"];
+
+const ICONS = {
+  dashboard:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
+  receipt:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/></svg>',
+  sparkles:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.6L18 9l-4.3 1.4L12 15l-1.7-4.6L6 9l4.3-1.4L12 3z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/></svg>',
+  boxes:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l10-5 10 5-10 5-10-5z"/><path d="M2 8v9l10 5 10-5V8"/><path d="M12 13v9"/></svg>',
+  users:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  wallet:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>',
+  staff:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><circle cx="19" cy="11" r="2"/><path d="M22 21v-1a3 3 0 0 0-2-2.83"/></svg>',
+  plus:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  trash:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  alert:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  up:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  down:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>',
+  baby:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A2F2A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M9 9c0 1.5 1 2.5 3 2.5s3-1 3-2.5"/><path d="M6 15c0 4 2 6 6 6s6-2 6-6"/></svg>'
+};
+
+const NAV = [
+  {key:"ringkasan", label:"Ringkasan", icon:"dashboard"},
+  {key:"transaksi", label:"Transaksi", icon:"receipt"},
+  {key:"layanan", label:"Layanan & Paket", icon:"sparkles"},
+  {key:"stok", label:"Stok", icon:"boxes"},
+  {key:"pelanggan", label:"Pelanggan", icon:"users"},
+  {key:"keuangan", label:"Keuangan", icon:"wallet"},
+  {key:"staf", label:"Staf", icon:"staff"},
+];
+
+/* ---------- Toast Notification ---------- */
+function showToast(msg, type = "info") {
+  const container = document.getElementById("toast-container");
+  if(!container) return;
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  const iconMap = { success: "✓", error: "✕", info: "ℹ" };
+  toast.innerHTML = `<span>${iconMap[type] || "ℹ"}</span> <span>${esc(msg)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = "toastOut 0.3s forwards";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+/* ---------- Pagination Helper ---------- */
+function paginate(items, page = 1, pageSize = 5) {
+  const total = items.length;
+  const totalPages = Math.ceil(total / pageSize) || 1;
+  const currentPage = Math.max(1, Math.min(page, totalPages));
+  const start = (currentPage - 1) * pageSize;
+  const paginatedItems = items.slice(start, start + pageSize);
+  
+  const renderControls = (pageKey) => {
+    if (total <= pageSize) return "";
+    return `
+      <div class="pagination-wrap">
+        <span>Menampilkan ${start + 1}-${Math.min(start + pageSize, total)} dari ${total} data</span>
+        <div class="pagination-btns">
+          <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage <= 1 ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage - 1}">‹ Seb</button>
+          <span style="align-self:center;font-weight:600;padding:0 4px;">${currentPage} / ${totalPages}</span>
+          <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage >= totalPages ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage + 1}">Next ›</button>
+        </div>
+      </div>
+    `;
+  };
+
+  return { items: paginatedItems, renderControls, currentPage, totalPages };
+}
+
+/* ---------- seed data ---------- */
+function seedData(){
+  const svc = {baby:uid(), swim:uid(), momMassage:uid(), facial:uid(), newborn:uid()};
+  const cust = {a:uid(), b:uid(), c:uid()};
+  const stf = {s1:uid(), s2:uid()};
+  const now = new Date();
+  const dayAgo = n => new Date(now.getTime()-n*86400000).toISOString().slice(0,10);
+
+  return {
+    services:[
+      {id:svc.baby,name:"Baby Spa & Massage",category:"Bayi",price:120000,duration:45},
+      {id:svc.swim,name:"Baby Swim",category:"Bayi",price:100000,duration:30},
+      {id:svc.momMassage,name:"Postnatal Massage",category:"Ibu",price:150000,duration:60},
+      {id:svc.facial,name:"Mom Facial",category:"Ibu",price:130000,duration:50},
+      {id:svc.newborn,name:"Paket Newborn Care",category:"Paket",price:400000,duration:90},
+    ],
+    staff:[
+      {id:stf.s1,name:"Rani",role:"Terapis Bayi",phone:"0812-1111-2222"},
+      {id:stf.s2,name:"Dewi",role:"Terapis Ibu",phone:"0813-3333-4444"},
+    ],
+    customers:[
+      {id:cust.a,name:"Sarah Putri",babyName:"Kiano",babyAge:"4 bulan",phone:"0811-2233-4455"},
+      {id:cust.b,name:"Amanda Yusuf",babyName:"Aqila",babyAge:"2 bulan",phone:"0822-5566-7788"},
+      {id:cust.c,name:"Nadia Rahmi",babyName:"-",babyAge:"-",phone:"0856-9988-7766"},
+    ],
+    transactions:[
+      {id:uid(),date:dayAgo(0),customerId:cust.a,serviceId:svc.baby,staffId:stf.s1,amount:120000},
+      {id:uid(),date:dayAgo(0),customerId:cust.b,serviceId:svc.momMassage,staffId:stf.s2,amount:150000},
+      {id:uid(),date:dayAgo(1),customerId:cust.c,serviceId:svc.facial,staffId:stf.s2,amount:130000},
+      {id:uid(),date:dayAgo(2),customerId:cust.a,serviceId:svc.swim,staffId:stf.s1,amount:100000},
+      {id:uid(),date:dayAgo(3),customerId:cust.b,serviceId:svc.newborn,staffId:stf.s1,amount:400000},
+      {id:uid(),date:dayAgo(4),customerId:cust.c,serviceId:svc.baby,staffId:stf.s1,amount:120000},
+      {id:uid(),date:dayAgo(5),customerId:cust.a,serviceId:svc.momMassage,staffId:stf.s2,amount:150000},
+    ],
+    packages:[
+      {id:uid(),customerId:cust.a,name:"Paket 5x Baby Spa",totalSessions:5,usedSessions:2,purchaseDate:dayAgo(10)},
+      {id:uid(),customerId:cust.b,name:"Paket 3x Postnatal Massage",totalSessions:3,usedSessions:3,purchaseDate:dayAgo(20)},
+    ],
+    inventory:[
+      {id:uid(),name:"Minyak Pijat Bayi",unit:"botol",stock:8,minStock:5},
+      {id:uid(),name:"Lotion Bayi",unit:"botol",stock:3,minStock:5},
+      {id:uid(),name:"Handuk Bayi",unit:"pcs",stock:20,minStock:10},
+      {id:uid(),name:"Sabun Mandi Bayi",unit:"botol",stock:6,minStock:4},
+      {id:uid(),name:"Masker Wajah Ibu",unit:"pcs",stock:12,minStock:10},
+    ],
+    expenses:[
+      {id:uid(),date:dayAgo(1),category:"Gaji Terapis",amount:1500000,note:"Gaji mingguan"},
+      {id:uid(),date:dayAgo(3),category:"Bahan Habis Pakai",amount:350000,note:"Beli minyak & lotion"},
+      {id:uid(),date:dayAgo(5),category:"Sewa Tempat",amount:2000000,note:"Sewa bulanan"},
+    ],
+  };
+}
+
+/* ---------- state ---------- */
+let state = { 
+  tab: "ringkasan", 
+  data: null,
+  txPage: 1,
+  custPage: 1,
+  expPage: 1,
+  custSearch: "",
+  financeFilter: todayISO().slice(0,7)
+};
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ state.data = JSON.parse(raw); return; }
+  }catch(e){}
+  state.data = seedData();
+  save();
+}
+function save(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data)); }catch(e){ console.error("Gagal menyimpan", e); }
+}
+
+/* ---------- render root ---------- */
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <img src="icon.png" alt="Logo Elfa Baby Spa" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.style.display='none';this.parentElement.innerHTML='👶';">
+        </div>
+        <div>
+          <div class="brand-title fx-display">Monitor Usaha</div>
+          <div class="brand-sub">ULFA BABY SPA</div>
+        </div>
+      </div>
+      <nav class="navlist">
+        ${NAV.map(n => `<button class="navbtn ${state.tab===n.key?'active':''}" data-action="nav" data-tab="${n.key}">${ICONS[n.icon]}<span>${n.label}</span></button>`).join("")}
+      </nav>
+      <div class="footer-note">
+        Tersimpan di perangkat ini.<br><br>
+        <button class="fx-btn fx-btn-mini" onclick="exportToExcel()" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; background:#217346; color:white; border:none;">📊 Export ke Excel</button>
+        <label class="fx-btn fx-btn-mini" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; cursor:pointer; background:var(--sage); color:white;">
+          📥 Import Excel / JSON
+          <input type="file" accept=".xlsx,.xls,.csv,.json" style="display:none;" onchange="importDataFile(event)">
+        </label>
+        <button class="fx-btn fx-btn-mini" onclick="backupData()" style="width:100%; display:flex; justify-content:center; background:var(--line); color:var(--ink); border:none;">💾 Backup JSON</button>
+      </div>
+    </aside>
+    <main id="main"></main>
+  `;
+  bindNav();
+  try{
+    renderTab();
+  }catch(e){
+    console.error("Gagal merender halaman:", e);
+    document.getElementById("main").innerHTML = `<div class="fx-card">Terjadi kendala saat menampilkan halaman ini. Coba klik menu lain di samping.</div>`;
+  }
+}
+
+function bindNav(){
+  document.querySelectorAll('[data-action="nav"]').forEach(btn=>{
+    btn.addEventListener("click", ()=>{ state.tab = btn.dataset.tab; render(); });
+  });
+}
+
+function renderTab(){
+  const main = document.getElementById("main");
+  const d = state.data;
+  switch(state.tab){
+    case "ringkasan": main.innerHTML = viewRingkasan(d); initCharts(d); break;
+    case "transaksi": main.innerHTML = viewTransaksi(d); bindTransaksi(); break;
+    case "layanan": main.innerHTML = viewLayanan(d); bindLayanan(); break;
+    case "stok": main.innerHTML = viewStok(d); bindStok(); break;
+    case "pelanggan": main.innerHTML = viewPelanggan(d); bindPelanggan(); break;
+    case "keuangan": main.innerHTML = viewKeuangan(d); bindKeuangan(); break;
+    case "staf": main.innerHTML = viewStaf(d); bindStaf(); break;
+  }
+}
+
+function header(title, sub){
+  return `<div class="section-header"><div><h1 class="section-title fx-display">${esc(title)}</h1><div class="section-sub">${esc(sub)}</div></div></div>`;
+}
+function kpiCard(label, value, iconKey, tint){
+  return `<div class="kpi-card">
+    <div class="kpi-top"><span class="kpi-label">${esc(label)}</span>
+      <div class="kpi-icon" style="background:${tint}">${ICONS[iconKey].replace(/currentColor/g,'#fff')}</div>
+    </div>
+    <div class="kpi-value">${value}</div>
+  </div>`;
+}
+
+/* ---------- RINGKASAN ---------- */
+function viewRingkasan(d){
+  const totalRevenue = d.transactions.reduce((s,t)=>s+t.amount,0);
+  const totalExpense = d.expenses.reduce((s,e)=>s+e.amount,0);
+  const netProfit = totalRevenue - totalExpense;
+  const lowStock = d.inventory.filter(i=>i.stock<=i.minStock);
+
+  return `
+    ${header("Ringkasan Usaha","Gambaran umum performa Elfa Baby Spa Anda")}
+    <div class="kpi-grid">
+      ${kpiCard("Total Pendapatan", fmtIDR(totalRevenue), "wallet", "var(--sage)")}
+      ${kpiCard("Total Pengeluaran", fmtIDR(totalExpense), "down", "var(--blush)")}
+      ${kpiCard("Laba Bersih", fmtIDR(netProfit), "up", netProfit>=0?"var(--sage)":"var(--danger)")}
+      ${kpiCard("Total Booking", d.transactions.length, "receipt", "var(--aqua)")}
+    </div>
+    <div class="charts-row">
+      <div class="fx-card">
+        <div class="card-title">Tren Pendapatan (7 transaksi terakhir)</div>
+        <div id="revenueChart"></div>
+      </div>
+      <div class="fx-card">
+        <div class="card-title">Layanan Terlaris</div>
+        <div id="servicesChart"></div>
+      </div>
+    </div>
+    ${lowStock.length>0 ? `
+    <div class="fx-card low-stock-card">
+      <div class="low-alert-title">${ICONS.alert.replace('currentColor','#8A5A1E')} Stok Menipis (${lowStock.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${lowStock.map(i=>`<span class="badge badge-low">${esc(i.name)} — sisa ${i.stock} ${esc(i.unit)}</span>`).join("")}
+      </div>
+    </div>` : ""}
+  `;
+}
+
+function initCharts(d){
+  const revWrap = document.getElementById("revenueChart");
+  const svcWrap = document.getElementById("servicesChart");
+  if(!revWrap || !svcWrap) return;
+
+  const map = {};
+  d.transactions.forEach(t=>{ map[t.date] = (map[t.date]||0) + t.amount; });
+  const days = Object.keys(map).sort().slice(-7);
+
+  if(days.length === 0){
+    revWrap.innerHTML = `<div style="color:var(--inkSoft);font-size:13px;padding:30px 0;text-align:center;">Belum ada data transaksi.</div>`;
+  } else {
+    const revData = days.map(k=>map[k]);
+    const revLabels = days.map(k=>fmtDate(k).slice(0,6));
+    const max = Math.max(...revData, 1);
+    const W = 560, H = 200, padL = 46, padB = 26, padT = 10;
+    const chartW = W - padL - 10, chartH = H - padT - padB;
+    const stepX = revData.length > 1 ? chartW / (revData.length - 1) : 0;
+    const points = revData.map((v,i)=>{
+      const x = padL + (revData.length>1 ? i*stepX : chartW/2);
+      const y = padT + chartH - (v/max)*chartH;
+      return {x,y,v};
+    });
+    const linePath = points.map((p,i)=> (i===0?"M":"L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
+    const areaPath = linePath + ` L${points[points.length-1].x.toFixed(1)},${padT+chartH} L${points[0].x.toFixed(1)},${padT+chartH} Z`;
+    const gridLines = [0,0.5,1].map(f=>{
+      const y = padT + chartH * f;
+      const val = Math.round(max * (1-f));
+      return `<line x1="${padL}" y1="${y}" x2="${W-10}" y2="${y}" stroke="#EFE0E4" stroke-width="1"/>
+              <text x="${padL-8}" y="${y+4}" text-anchor="end" font-size="10.5" fill="#8C757D">${(val/1000).toFixed(0)}rb</text>`;
+    }).join("");
+    const labels = points.map((p,i)=>`<text x="${p.x}" y="${H-6}" text-anchor="middle" font-size="10.5" fill="#8C757D">${esc(revLabels[i])}</text>`).join("");
+    const dots = points.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="4" fill="#E85D88"><title>${fmtIDR(p.v)}</title></circle>`).join("");
+
+    revWrap.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible;">
+      ${gridLines}
+      <path d="${areaPath}" fill="rgba(232,93,136,0.12)" stroke="none"/>
+      <path d="${linePath}" fill="none" stroke="#E85D88" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      ${labels}
+    </svg>`;
+  }
+
+  const svcMap = {};
+  d.transactions.forEach(t=>{
+    const svc = d.services.find(s=>s.id===t.serviceId);
+    const name = svc ? svc.name : "Lainnya";
+    svcMap[name] = (svcMap[name]||0)+1;
+  });
+  const top = Object.entries(svcMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  if(top.length === 0){
+    svcWrap.innerHTML = `<div style="color:var(--inkSoft);font-size:13px;padding:30px 0;text-align:center;">Belum ada data transaksi.</div>`;
+  } else {
+    const maxCount = Math.max(...top.map(t=>t[1]), 1);
+    svcWrap.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;padding-top:4px;">
+      ${top.map((t,i)=>{
+        const pct = Math.round((t[1]/maxCount)*100);
+        const color = CATEGORY_COLORS[i%CATEGORY_COLORS.length];
+        return `<div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+            <span>${esc(t[0])}</span><span style="font-weight:600;">${t[1]}x</span>
+          </div>
+          <div style="height:9px;border-radius:999px;background:var(--line);overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:999px;"></div>
+          </div>
+        </div>`;
+      }).join("")}
+    </div>`;
+  }
+}
+
+/* ---------- TRANSAKSI ---------- */
+function viewTransaksi(d){
+  const sorted = [...d.transactions].sort((a,b)=>b.date.localeCompare(a.date));
+  const pg = paginate(sorted, state.txPage, 6);
+
+  return `
+    ${header("Transaksi & Booking","Catat setiap kunjungan dan layanan yang terjual")}
+    <div class="fx-card">
+      <div class="form-grid">
+        <div class="field"><span class="field-label">Tanggal</span><input class="fx-input" type="date" id="tx-date" value="${todayISO()}"></div>
+        <div class="field"><span class="field-label">Pelanggan</span><select class="fx-input" id="tx-customer"><option value="">Pilih pelanggan</option>${d.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+        <div class="field"><span class="field-label">Layanan</span><select class="fx-input" id="tx-service"><option value="">Pilih layanan</option>${d.services.map(s=>`<option value="${s.id}">${esc(s.name)} — ${fmtIDR(s.price)}</option>`).join("")}</select></div>
+        <div class="field"><span class="field-label">Terapis</span><select class="fx-input" id="tx-staff"><option value="">Pilih terapis</option>${d.staff.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+        <button class="fx-btn" id="tx-add">${ICONS.plus} Tambah</button>
+      </div>
+    </div>
+    <div class="fx-card">
+      <table class="fx-table">
+        <thead><tr><th>Tanggal</th><th>Pelanggan</th><th>Layanan</th><th>Terapis</th><th>Jumlah</th><th>Aksi</th></tr></thead>
+        <tbody>
+          ${pg.items.length===0 ? `<tr class="empty-row"><td colspan="6">Belum ada transaksi. Tambahkan booking pertama Anda di atas.</td></tr>` :
+            pg.items.map(t=>{
+              const cust = d.customers.find(c=>c.id===t.customerId);
+              const svc = d.services.find(s=>s.id===t.serviceId);
+              const stf = d.staff.find(s=>s.id===t.staffId);
+              return `<tr>
+                <td>${fmtDate(t.date)}</td><td>${cust?esc(cust.name):"—"}</td><td>${svc?esc(svc.name):"—"}</td><td>${stf?esc(stf.name):"—"}</td>
+                <td style="font-weight:600">${fmtIDR(t.amount)}</td>
+                <td>
+                  <button class="fx-btn fx-btn-mini" data-action="print-tx" data-id="${t.id}" style="background:var(--aqua); color:white; margin-right:4px;">🖨️ Struk</button>
+                  <button class="fx-btn-ghost" data-action="del-tx" data-id="${t.id}">${ICONS.trash}</button>
+                </td>
+              </tr>`;
+            }).join("")}
+        </tbody>
+      </table>
+      ${pg.renderControls('tx')}
+    </div>
+  `;
+}
+function bindTransaksi(){
+  document.getElementById("tx-add").addEventListener("click", ()=>{
+    const date = document.getElementById("tx-date").value || todayISO();
+    const customerId = document.getElementById("tx-customer").value;
+    const serviceId = document.getElementById("tx-service").value;
+    const staffId = document.getElementById("tx-staff").value;
+    
+    if(!customerId || !serviceId) {
+      showToast("Pilih Pelanggan dan Layanan terlebih dahulu!", "error");
+      return;
+    }
+    
+    const svc = state.data.services.find(s=>s.id===serviceId);
+    state.data.transactions.unshift({id:uid(), date, customerId, serviceId, staffId, amount: svc?svc.price:0});
+    save(); 
+    showToast("Transaksi berhasil ditambahkan", "success");
+    renderTab();
+  });
+
+  document.querySelectorAll('[data-action="print-tx"]').forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const tx = state.data.transactions.find(t=>t.id===btn.dataset.id);
+      if(!tx) return;
+      const cust = state.data.customers.find(c=>c.id===tx.customerId);
+      const svc = state.data.services.find(s=>s.id===tx.serviceId);
+      const stf = state.data.staff.find(s=>s.id===tx.staffId);
+
+      const printArea = document.getElementById("print-area");
+      printArea.innerHTML = `
+        <div style="width:280px; padding:10px; border:1px solid #ccc; text-align:center; font-family:sans-serif;">
+          <h3 style="margin:0; color:#E85D88;">ELFA BABY SPA</h3>
+          <p style="font-size:11px; margin:4px 0 12px 0;">Struk Pembayaran Usaha Spa</p>
+          <hr style="border-dash:dashed; border-width:1px 0 0 0;">
+          <table style="width:100%; font-size:12px; text-align:left; margin:10px 0;">
+            <tr><td>Tgl:</td><td>${fmtDate(tx.date)}</td></tr>
+            <tr><td>Pelanggan:</td><td>${cust?esc(cust.name):'-'}</td></tr>
+            <tr><td>Layanan:</td><td>${svc?esc(svc.name):'-'}</td></tr>
+            <tr><td>Terapis:</td><td>${stf?esc(stf.name):'-'}</td></tr>
+          </table>
+          <hr style="border-dash:dashed; border-width:1px 0 0 0;">
+          <p style="font-size:14px; font-weight:bold; margin:8px 0; color:#E85D88;">Total: ${fmtIDR(tx.amount)}</p>
+          <p style="font-size:10px; margin-top:12px;">Terima kasih atas kunjungan Anda!</p>
+        </div>
+      `;
+      window.print();
+    });
+  });
+
+  document.querySelectorAll('[data-action="del-tx"]').forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      if(!confirm("Yakin ingin menghapus transaksi ini?")) return;
+      state.data.transactions = state.data.transactions.filter(t=>t.id!==btn.dataset.id);
+      save(); 
+      showToast("Transaksi berhasil dihapus", "info");
+      renderTab();
+    });
+  });
+
+  document.querySelectorAll('[data-page-action="tx"]').forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.txPage = Number(btn.dataset.page);
+      renderTab();
+    });
+  });
+}
+
+/* ---------- LAYANAN & PAKET ---------- */
+function viewLayanan(d){
+  return `
+    ${header("Layanan & Paket","Kelola daftar layanan spa dan paket membership pelanggan")}
+    <div class="fx-card">
+      <div class="card-title">Daftar Layanan</div>
+      <div class="form-grid">
+        <div class="field"><span class="field-label">Nama layanan</span><input class="fx-input" id="svc-name" placeholder="mis. Baby Massage"></div>
+        <div class="field"><span class="field-label">Kategori</span><select class="fx-input" id="svc-category"><option>Bayi</option><option>Ibu</option><option>Paket</option></select></div>
+        <div class="field"><span class="field-label">Harga (Rp)</span><input class="fx-input" type="number" id="svc-price" placeholder="120000"></div>
+        <div class="field"><span class="field-label">Durasi (menit)</span><input class="fx-input" type="number" id="svc-duration" placeholder="45"></div>
+        <button class="fx-btn" id="svc-add">${ICONS.plus} Tambah</button>
+      </div>
+      <table class="fx-table">
+        <thead><tr><th>Layanan</th><th>Kategori</th><th>Harga</th><th>Durasi</th><th></th></tr></thead>
+        <tbody>
+          ${d.services.length===0 ? `<tr class="empty-row"><td colspan="5">Belum ada layanan.</td></tr>` :
+            d.services.map(s=>`<tr>
+              <td>${esc(s.name)}</td><td>${esc(s.category)}</td><td>${fmtIDR(s.price)}</td><td>${s.duration} mnt</td>
+              <td><button class="fx-btn-ghost" data-action="del-svc" data-id="${s.id}">${ICONS.trash}</button></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div class="fx-card">
+      <div class="card-title">Paket Membership Pelanggan</div>
+      <div class="form-grid">
+        <div class="field"><span class="field-label">Pelanggan</span><select class="fx-input" id="pkg-customer"><option value="">Pilih pelanggan</option>${d.customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")}</select></div>
+        <div class="field"><span class="field-label">Nama paket</span><input class="fx-input" id="pkg-name" placeholder="Paket 5x Baby Spa"></div>
+        <div class="field"><span class="field-label">Total sesi</span><input class="fx-input" type="number" id="pkg-sessions" placeholder="5"></div>
+        <button class="fx-btn" id="pkg-add">${ICONS.plus} Tambah</button>
+      </div>
+      <div class="pkg-grid">
+        ${d.packages.length===0 ? `<div style="color:var(--inkSoft);font-size:13px;">Belum ada paket aktif.</div>` :
+          d.packages.map(p=>{
+            const cust = d.customers.find(c=>c.id===p.customerId);
+            const pct = p.totalSessions ? Math.round((p.usedSessions/p.totalSessions)*100) : 0;
+            return `<div class="pkg-card">
+              <div style="display:flex;justify-content:space-between;">
+                <div style="font-weight:600;font-size:13.5px;">${esc(p.name)}</div>
+                <button class="fx-btn-ghost" data-action="del-pkg" data-id="${p.id}">${ICONS.trash}</button>
+              </div>
+              <div style="font-size:12px;color:var(--inkSoft);margin-bottom:8px;">${cust?esc(cust.name):"—"}</div>
+              <div class="pkg-bar"><div class="pkg-bar-fill" style="width:${pct}%;background:${pct>=100?'var(--amber)':'var(--sage)'}"></div></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:12.5px;color:var(--inkSoft);">${p.usedSessions} / ${p.totalSessions} sesi terpakai</span>
+                <div style="display:flex;gap:4px;">
+                  <button class="fx-btn fx-btn-mini" data-action="pkg-dec" data-id="${p.id}">−</button>
+                  <button class="fx-btn fx-btn-mini" style="background:var(--sage);color:#fff" data-action="pkg-inc" data-id="${p.id}">+</button>
+                </div>
+              </div>
+            </div>`;
+          }).join("")}
+      </div>
+    </div>
+  `;
+}
+function bindLayanan(){
+  document.getElementById("svc-add").addEventListener("click", ()=>{
+    const name = document.getElementById("svc-name").value.trim();
+    const category = document.getElementById("svc-category").value;
+    const price = Number(document.getElementById("svc-price").value)||0;
+    const duration = Number(document.getElementById("svc-duration").value)||0;
+    if(!name || !price) {
+      showToast("Isi Nama Layanan dan Harga terlebih dahulu!", "error");
+      return;
+    }
+    state.data.services.push({id:uid(), name, category, price, duration});
+    save(); showToast("Layanan berhasil ditambahkan", "success"); renderTab();
+  });
+  document.querySelectorAll('[data-action="del-svc"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    if(!confirm("Yakin hapus layanan ini?")) return;
+    state.data.services = state.data.services.filter(s=>s.id!==btn.dataset.id); save(); showToast("Layanan dihapus", "info"); renderTab();
+  }));
+  document.getElementById("pkg-add").addEventListener("click", ()=>{
+    const customerId = document.getElementById("pkg-customer").value;
+    const name = document.getElementById("pkg-name").value.trim();
+    const totalSessions = Number(document.getElementById("pkg-sessions").value)||0;
+    if(!customerId || !name || !totalSessions) {
+      showToast("Lengkapi Pelanggan, Nama Paket, dan Total Sesi!", "error");
+      return;
+    }
+    state.data.packages.push({id:uid(), customerId, name, totalSessions, usedSessions:0, purchaseDate:todayISO()});
+    save(); showToast("Paket membership berhasil ditambahkan", "success"); renderTab();
+  });
+  document.querySelectorAll('[data-action="del-pkg"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    if(!confirm("Yakin hapus paket ini?")) return;
+    state.data.packages = state.data.packages.filter(p=>p.id!==btn.dataset.id); save(); showToast("Paket dihapus", "info"); renderTab();
+  }));
+  document.querySelectorAll('[data-action="pkg-inc"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    const p = state.data.packages.find(p=>p.id===btn.dataset.id);
+    if(p) p.usedSessions = Math.min(p.totalSessions, p.usedSessions+1);
+    save(); renderTab();
+  }));
+  document.querySelectorAll('[data-action="pkg-dec"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    const p = state.data.packages.find(p=>p.id===btn.dataset.id);
+    if(p) p.usedSessions = Math.max(0, p.usedSessions-1);
+    save(); renderTab();
+  }));
+}
+
+/* ---------- STOK ---------- */
+function viewStok(d){
+  return `
+    ${header("Stok Bahan & Perlengkapan","Pantau bahan habis pakai agar tidak kehabisan saat sesi berlangsung")}
+    <div class="fx-card">
+      <div class="form-grid">
+        <div class="field"><span class="field-label">Nama barang</span><input class="fx-input" id="inv-name" placeholder="mis. Minyak Pijat"></div>
+        <div class="field"><span class="field-label">Satuan</span><input class="fx-input" id="inv-unit" placeholder="botol"></div>
+        <div class="field"><span class="field-label">Stok saat ini</span><input class="fx-input" type="number" id="inv-stock" placeholder="10"></div>
+        <div class="field"><span class="field-label">Batas minimum</span><input class="fx-input" type="number" id="inv-min" placeholder="5"></div>
+        <button class="fx-btn" id="inv-add">${ICONS.plus} Tambah</button>
+      </div>
+    </div>
+    <div class="fx-card">
+      <table class="fx-table">
+        <thead><tr><th>Barang</th><th>Stok</th><th>Batas Minimum</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>
+          ${d.inventory.length===0 ? `<tr class="empty-row"><td colspan="5">Belum ada barang di stok.</td></tr>` :
+            d.inventory.map(i=>{
+              const low = i.stock<=i.minStock;
+              return `<tr>
+                <td>${esc(i.name)}</td>
+                <td><div style="display:flex;align-items:center;gap:8px;">
+                  <button class="fx-btn fx-btn-mini" data-action="inv-dec" data-id="${i.id}">−</button>
+                  <span style="min-width:46px;text-align:center;font-weight:600;">${i.stock} ${esc(i.unit)}</span>
+                  <button class="fx-btn fx-btn-mini" style="background:var(--sage);color:#fff" data-action="inv-inc" data-id="${i.id}">+</button>
+                </div></td>
+                <td>${i.minStock} ${esc(i.unit)}</td>
+                <td>${low?`<span class="badge badge-low">Menipis</span>`:`<span class="badge badge-ok">Aman</span>`}</td>
+                <td>
+                  <button class="fx-btn-ghost" data-action="edit-inv" data-id="${i.id}" style="color:var(--sage)">✏️</button>
+                  <button class="fx-btn-ghost" data-action="del-inv" data-id="${i.id}">${ICONS.trash}</button>
+                </td>
+              </tr>`;
+            }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+function bindStok(){
+  document.getElementById("inv-add").addEventListener("click", ()=>{
+    const name = document.getElementById("inv-name").value.trim();
+    const unit = document.getElementById("inv-unit").value.trim() || "pcs";
+    const stock = Number(document.getElementById("inv-stock").value)||0;
+    const minStock = Number(document.getElementById("inv-min").value)||0;
+    if(!name) {
+      showToast("Isi Nama Barang terlebih dahulu!", "error");
+      return;
+    }
+    state.data.inventory.push({id:uid(), name, unit, stock, minStock});
+    save(); showToast("Barang berhasil ditambahkan", "success"); renderTab();
+  });
+  document.querySelectorAll('[data-action="inv-inc"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    const i = state.data.inventory.find(i=>i.id===btn.dataset.id); if(i) i.stock+=1; save(); renderTab();
+  }));
+  document.querySelectorAll('[data-action="inv-dec"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    const i = state.data.inventory.find(i=>i.id===btn.dataset.id); if(i) i.stock=Math.max(0,i.stock-1); save(); renderTab();
+  }));
+  document.querySelectorAll('[data-action="edit-inv"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    const item = state.data.inventory.find(i=>i.id===btn.dataset.id); 
+    if(item) {
+      const newName = prompt("Ubah Nama Barang:", item.name);
+      if(newName !== null && newName.trim() !== "") {
+        item.name = newName.trim();
+        save(); showToast("Nama barang diperbarui", "success"); renderTab();
+      }
+    }
+  }));
+  document.querySelectorAll('[data-action="del-inv"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    if(!confirm("Yakin hapus barang ini?")) return;
+    state.data.inventory = state.data.inventory.filter(i=>i.id!==btn.dataset.id); save(); showToast("Barang dihapus", "info"); renderTab();
+  }));
+}
+
+/* ---------- PELANGGAN ---------- */
+function viewPelanggan(d){
+  const searchQuery = (state.custSearch || "").toLowerCase();
+  const filtered = d.customers.filter(c => 
+    c.name.toLowerCase().includes(searchQuery) || 
+    (c.babyName && c.babyName.toLowerCase().includes(searchQuery)) ||
+    (c.phone && c.phone.includes(searchQuery))
+  );
+
+  const pg = paginate(filtered, state.custPage, 5);
+
+  return `
+    ${header("Data Pelanggan","Simpan data ibu & bayi untuk layanan yang lebih personal")}
+    <div class="fx-card">
+      <div class="form-grid">
+        <div class="field"><span class="field-label">Nama ibu</span><input class="fx-input" id="cust-name" placeholder="Sarah Putri"></div>
+        <div class="field"><span class="field-label">Nama bayi</span><input class="fx-input" id="cust-baby" placeholder="Kiano"></div>
+        <div class="field"><span class="field-label">Usia bayi</span><input class="fx-input" id="cust-age" placeholder="4 bulan"></div>
+        <div class="field"><span class="field-label">No. HP</span><input class="fx-input" id="cust-phone" placeholder="0812xxxxxxx"></div>
+        <button class="fx-btn" id="cust-add">${ICONS.plus} Tambah</button>
+      </div>
+    </div>
+    <div class="fx-card">
+      <div style="margin-bottom:12px;">
+        <input class="fx-input" id="cust-search" placeholder="🔍 Cari nama ibu, nama bayi, atau no. HP..." value="${esc(state.custSearch || '')}">
+      </div>
+      <table class="fx-table">
+        <thead><tr><th>Nama Ibu</th><th>Bayi</th><th>Usia</th><th>No. HP</th><th>Kunjungan</th><th></th></tr></thead>
+        <tbody>
+          ${pg.items.length===0 ? `<tr class="empty-row"><td colspan="6">Data pelanggan tidak ditemukan.</td></tr>` :
+            pg.items.map(c=>{
+              const visits = d.transactions.filter(t=>t.customerId===c.id).length;
+              return `<tr>
+                <td>${esc(c.name)}</td><td>${esc(c.babyName)||"—"}</td><td>${esc(c.babyAge)||"—"}</td><td>${esc(c.phone)||"—"}</td>
+                <td>${visits}x</td>
+                <td><button class="fx-btn-ghost" data-action="del-cust" data-id="${c.id}">${ICONS.trash}</button></td>
+              </tr>`;
+            }).join("")}
+        </tbody>
+      </table>
+      ${pg.renderControls('cust')}
+    </div>
+  `;
+}
+function bindPelanggan(){
+  document.getElementById("cust-add").addEventListener("click", ()=>{
+    const name = document.getElementById("cust-name").value.trim();
+    const babyName = document.getElementById("cust-baby").value.trim();
+    const babyAge = document.getElementById("cust-age").value.trim();
+    const phone = document.getElementById("cust-phone").value.trim();
+    if(!name) {
+      showToast("Isi Nama Ibu terlebih dahulu!", "error");
+      return;
+    }
+    state.data.customers.push({id:uid(), name, babyName, babyAge, phone});
+    save(); showToast("Pelanggan berhasil ditambahkan", "success"); renderTab();
+  });
+  document.querySelectorAll('[data-action="del-cust"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    if(!confirm("Yakin hapus data pelanggan ini?")) return;
+    state.data.customers = state.data.customers.filter(c=>c.id!==btn.dataset.id); save(); showToast("Data pelanggan dihapus", "info"); renderTab();
+  }));
+
+  const searchInput = document.getElementById("cust-search");
+  if(searchInput){
+    searchInput.addEventListener("input", (e)=>{
+      state.custSearch = e.target.value;
+      state.custPage = 1;
+      renderTab();
+      const el = document.getElementById("cust-search");
+      if(el){ el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    });
+  }
+
+  document.querySelectorAll('[data-page-action="cust"]').forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.custPage = Number(btn.dataset.page);
+      renderTab();
+    });
+  });
+}
+
+/* ---------- KEUANGAN ---------- */
+function viewKeuangan(d){
+  const currentMonth = state.financeFilter || todayISO().slice(0,7);
+  
+  const filteredTx = d.transactions.filter(t => t.date.startsWith(currentMonth));
+  const filteredExp = d.expenses.filter(e => e.date.startsWith(currentMonth));
+
+  const totalRevenue = filteredTx.reduce((s,t)=>s+t.amount,0);
+  const totalExpense = filteredExp.reduce((s,e)=>s+e.amount,0);
+  const sorted = [...filteredExp].sort((a,b)=>b.date.localeCompare(a.date));
+  const pg = paginate(sorted, state.expPage, 5);
+
+  return `
+    ${header("Keuangan","Pantau pemasukan dan pengeluaran usaha")}
+    <div class="fx-card" style="margin-bottom:12px;">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span style="font-size:13px; font-weight:600;">Filter Bulan:</span>
+        <input class="fx-input" type="month" id="fin-month" value="${currentMonth}" style="width:auto;">
+      </div>
+    </div>
+    <div class="kpi-grid">
+      ${kpiCard("Pemasukan Bulan Ini", fmtIDR(totalRevenue), "up", "var(--sage)")}
+      ${kpiCard("Pengeluaran Bulan Ini", fmtIDR(totalExpense), "down", "var(--blush)")}
+      ${kpiCard("Laba Bersih Bulan Ini", fmtIDR(totalRevenue-totalExpense), "wallet", "var(--aqua)")}
+    </div>
+    <div class="fx-card">
+      <div class="card-title">Catat Pengeluaran</div>
+      <div class="form-grid">
+        <div class="field"><span class="field-label">Tanggal</span><input class="fx-input" type="date" id="exp-date" value="${todayISO()}"></div>
+        <div class="field"><span class="field-label">Kategori</span><select class="fx-input" id="exp-category">
+          <option>Bahan Habis Pakai</option><option>Gaji Terapis</option><option>Sewa Tempat</option><option>Listrik & Air</option><option>Promosi</option><option>Lainnya</option>
+        </select></div>
+        <div class="field"><span class="field-label">Jumlah (Rp)</span><input class="fx-input" type="number" id="exp-amount" placeholder="350000"></div>
+        <div class="field"><span class="field-label">Catatan</span><input class="fx-input" id="exp-note" placeholder="opsional"></div>
+        <button class="fx-btn" id="exp-add">${ICONS.plus} Tambah</button>
+      </div>
+    </div>
+    <div class="fx-card">
+      <table class="fx-table">
+        <thead><tr><th>Tanggal</th><th>Kategori</th><th>Catatan</th><th>Jumlah</th><th></th></tr></thead>
+        <tbody>
+          ${pg.items.length===0 ? `<tr class="empty-row"><td colspan="5">Belum ada pengeluaran tercatat untuk bulan ini.</td></tr>` :
+            pg.items.map(e=>`<tr>
+              <td>${fmtDate(e.date)}</td><td>${esc(e.category)}</td><td>${esc(e.note)||"—"}</td>
+              <td style="font-weight:600;color:var(--danger)">−${fmtIDR(e.amount)}</td>
+              <td><button class="fx-btn-ghost" data-action="del-exp" data-id="${e.id}">${ICONS.trash}</button></td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+      ${pg.renderControls('exp')}
+    </div>
+  `;
+}
+function bindKeuangan(){
+  document.getElementById("exp-add").addEventListener("click", ()=>{
+    const date = document.getElementById("exp-date").value || todayISO();
+    const category = document.getElementById("exp-category").value;
+    const amount = Number(document.getElementById("exp-amount").value)||0;
+    const note = document.getElementById("exp-note").value.trim();
+    if(!amount) {
+      showToast("Isi Jumlah (Rp) pengeluaran terlebih dahulu!", "error");
+      return;
+    }
+    state.data.expenses.unshift({id:uid(), date, category, amount, note});
+    save(); showToast("Pengeluaran berhasil dicatat", "success"); renderTab();
+  });
+  document.querySelectorAll('[data-action="del-exp"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    if(!confirm("Yakin hapus catatan pengeluaran ini?")) return;
+    state.data.expenses = state.data.expenses.filter(e=>e.id!==btn.dataset.id); save(); showToast("Pengeluaran dihapus", "info"); renderTab();
+  }));
+
+  const filterInput = document.getElementById("fin-month");
+  if(filterInput){
+    filterInput.addEventListener("change", (e)=>{
+      state.financeFilter = e.target.value;
+      state.expPage = 1;
+      renderTab();
+    });
+  }
+
+  document.querySelectorAll('[data-page-action="exp"]').forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      state.expPage = Number(btn.dataset.page);
+      renderTab();
+    });
+  });
+}
+
+/* ---------- STAF ---------- */
+function viewStaf(d){
+  return `
+    ${header("Staf & Terapis","Kelola tim dan pantau jumlah layanan yang ditangani")}
+    <div class="fx-card">
+      <div class="form-grid">
+        <div class="field"><span class="field-label">Nama</span><input class="fx-input" id="staf-name" placeholder="Rani"></div>
+        <div class="field"><span class="field-label">Peran</span><select class="fx-input" id="staf-role">
+          <option>Terapis Bayi</option><option>Terapis Ibu</option><option>Resepsionis</option><option>Manajer</option>
+        </select></div>
+        <div class="field"><span class="field-label">No. HP</span><input class="fx-input" id="staf-phone" placeholder="0812xxxxxxx"></div>
+        <button class="fx-btn" id="staf-add">${ICONS.plus} Tambah</button>
+      </div>
+    </div>
+    <div class="fx-card">
+      <table class="fx-table">
+        <thead><tr><th>Nama</th><th>Peran</th><th>No. HP</th><th>Layanan Ditangani</th><th></th></tr></thead>
+        <tbody>
+          ${d.staff.length===0 ? `<tr class="empty-row"><td colspan="5">Belum ada data staf.</td></tr>` :
+            d.staff.map(s=>{
+              const count = d.transactions.filter(t=>t.staffId===s.id).length;
+              return `<tr>
+                <td>${esc(s.name)}</td><td>${esc(s.role)}</td><td>${esc(s.phone)||"—"}</td><td>${count}x</td>
+                <td><button class="fx-btn-ghost" data-action="del-staf" data-id="${s.id}">${ICONS.trash}</button></td>
+              </tr>`;
+            }).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+function bindStaf(){
+  document.getElementById("staf-add").addEventListener("click", ()=>{
+    const name = document.getElementById("staf-name").value.trim();
+    const role = document.getElementById("staf-role").value;
+    const phone = document.getElementById("staf-phone").value.trim();
+    if(!name) {
+      showToast("Isi Nama Staf terlebih dahulu!", "error");
+      return;
+    }
+    state.data.staff.push({id:uid(), name, role, phone});
+    save(); showToast("Data staf berhasil ditambahkan", "success"); renderTab();
+  });
+  document.querySelectorAll('[data-action="del-staf"]').forEach(btn=>btn.addEventListener("click", ()=>{
+    if(!confirm("Yakin hapus data staf ini?")) return;
+    state.data.staff = state.data.staff.filter(s=>s.id!==btn.dataset.id); save(); showToast("Data staf dihapus", "info"); renderTab();
+  }));
+}
+
+/* ---------- EXPORT & IMPORT (EXCEL & JSON) ---------- */
+function exportToExcel() {
+  if(typeof XLSX === 'undefined') {
+    showToast("Library Excel sedang dimuat, coba beberapa detik lagi.", "error");
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const d = state.data;
+
+  // 1. Sheet Transaksi
+  const txData = d.transactions.map(t => {
+    const cust = d.customers.find(c=>c.id===t.customerId);
+    const svc = d.services.find(s=>s.id===t.serviceId);
+    const stf = d.staff.find(s=>s.id===t.staffId);
+    return {
+      "Tanggal": t.date,
+      "Pelanggan": cust ? cust.name : "-",
+      "Layanan": svc ? svc.name : "-",
+      "Terapis": stf ? stf.name : "-",
+      "Jumlah (Rp)": t.amount
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(txData), "Transaksi");
+
+  // 2. Sheet Pelanggan
+  const custData = d.customers.map(c => ({
+    "Nama Ibu": c.name,
+    "Nama Bayi": c.babyName || "-",
+    "Usia Bayi": c.babyAge || "-",
+    "No HP": c.phone || "-"
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(custData), "Pelanggan");
+
+  // 3. Sheet Stok
+  const invData = d.inventory.map(i => ({
+    "Nama Barang": i.name,
+    "Satuan": i.unit,
+    "Stok Saat Ini": i.stock,
+    "Batas Minimum": i.minStock
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(invData), "Stok Barang");
+
+  // 4. Sheet Keuangan/Pengeluaran
+  const expData = d.expenses.map(e => ({
+    "Tanggal": e.date,
+    "Kategori": e.category,
+    "Catatan": e.note || "-",
+    "Jumlah (Rp)": e.amount
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(expData), "Pengeluaran");
+
+  XLSX.writeFile(wb, `ElfaSpa_Laporan_${todayISO()}.xlsx`);
+  showToast("Laporan Excel berhasil diunduh!", "success");
+}
+
+function importDataFile(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+
+  const fileName = file.name.toLowerCase();
+
+  // Jika file berupa JSON backup
+  if(fileName.endsWith(".json")) {
+    restoreData(file);
+    return;
+  }
+
+  // Jika file berupa Excel (.xlsx / .xls / .csv)
+  if(typeof XLSX === 'undefined') {
+    showToast("Sistem Excel belum siap. Coba lagi.", "error");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+
+      let importedCount = 0;
+
+      // Cek sheet Pelanggan
+      if(workbook.SheetNames.includes("Pelanggan")) {
+        const sheet = workbook.Sheets["Pelanggan"];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        rows.forEach(r => {
+          const name = r["Nama Ibu"] || r["nama"] || r["Nama"];
+          if(name && !state.data.customers.some(c=>c.name.toLowerCase()===String(name).toLowerCase())) {
+            state.data.customers.push({
+              id: uid(),
+              name: String(name),
+              babyName: String(r["Nama Bayi"] || r["baby"] || "-"),
+              babyAge: String(r["Usia Bayi"] || r["age"] || "-"),
+              phone: String(r["No HP"] || r["phone"] || "-")
+            });
+            importedCount++;
+          }
+        });
+      }
+
+      // Cek sheet Stok
+      if(workbook.SheetNames.includes("Stok Barang") || workbook.SheetNames.includes("Stok")) {
+        const sheet = workbook.Sheets[workbook.SheetNames.find(s=>s.includes("Stok"))];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        rows.forEach(r => {
+          const name = r["Nama Barang"] || r["Barang"];
+          if(name && !state.data.inventory.some(i=>i.name.toLowerCase()===String(name).toLowerCase())) {
+            state.data.inventory.push({
+              id: uid(),
+              name: String(name),
+              unit: String(r["Satuan"] || "pcs"),
+              stock: Number(r["Stok Saat Ini"] || r["Stok"] || 0),
+              minStock: Number(r["Batas Minimum"] || 5)
+            });
+            importedCount++;
+          }
+        });
+      }
+
+      save();
+      render();
+      if(importedCount > 0) {
+        showToast(`Berhasil mengimpor ${importedCount} data dari Excel!`, "success");
+      } else {
+        showToast("File Excel dibaca, tidak ada data baru yang ditambahkan.", "info");
+      }
+
+    } catch(err) {
+      console.error(err);
+      showToast("Gagal membaca file Excel!", "error");
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function restoreData(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if(parsed && parsed.transactions) { 
+        state.data = parsed;
+        save();
+        render(); 
+        showToast("Data usaha berhasil dipulihkan!", "success");
+      } else {
+        showToast("Format file backup tidak valid!", "error");
+      }
+    } catch(err) {
+      showToast("Gagal membaca file data!", "error");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function backupData() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state.data));
+  const fileLink = document.createElement('a');
+  fileLink.href = dataStr;
+  fileLink.download = "Backup-ElfaSpa-" + todayISO() + ".json";
+  fileLink.click();
+  showToast("File backup berhasil diunduh!", "success");
+}
+
+/* ---------- init ---------- */
+load();
+render();
+</script>
+</body>
+</html>
