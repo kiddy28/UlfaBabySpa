@@ -1,68 +1,36 @@
 /* ==========================================================================
    1. CONSTANTS, HELPERS & ICONS
    ========================================================================== */
-const STORAGE_KEY = "spa_monitor_data_v3";
+/* ==========================================================================
+   1. CONSTANTS, HELPERS & ICONS
+   ========================================================================== */
 const uid = () => Math.random().toString(36).slice(2, 10);
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const fmtIDR = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const fmtDate = (d) => new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-const CATEGORY_COLORS = ["#E85D88", "#4FA7B2", "#D9A548", "#A87CA0", "#E7A99A"];
-
-const ICONS = {
-  dashboard: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
-  receipt: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/></svg>',
-  sparkles: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.6L18 9l-4.3 1.4L12 15l-1.7-4.6L6 9l4.3-1.4L12 3z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/></svg>',
-  boxes: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l10-5 10 5-10 5-10-5z"/><path d="M2 8v9l10 5 10-5V8"/><path d="M12 13v9"/></svg>',
-  users: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-  wallet: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>',
-  staff: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><circle cx="19" cy="11" r="2"/><path d="M22 21v-1a3 3 0 0 0-2-2.83"/></svg>',
-  plus: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
-  trash: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
-  alert: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  up: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
-  down: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>'
+/* ==========================================================================
+   FIREBASE CONFIGURATION
+   ========================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAqUKV4q9MhJUiHbaKBUbHuLLET_G-fyx4",
+  authDomain: "ulfa-baby-spa.firebaseapp.com",
+  databaseURL: "https://ulfa-baby-spa-default-rtdb.firebaseio.com",
+  projectId: "ulfa-baby-spa",
+  storageBucket: "ulfa-baby-spa.firebasestorage.app",
+  messagingSenderId: "711875401048",
+  appId: "1:711875401048:web:d4f57a07fab435cfdb812d",
+  measurementId: "G-CVCJDL869X"
 };
 
-function showToast(msg, type = "info") {
-  const container = document.getElementById("toast-container");
-  if (!container) return;
-  const toast = document.createElement("div");
-  toast.className = `toast toast-${type}`;
-  const iconMap = { success: "✓", error: "✕", info: "ℹ" };
-  toast.innerHTML = `<span>${iconMap[type] || "ℹ"}</span> <span>${esc(msg)}</span>`;
-  container.appendChild(toast);
-  setTimeout(() => {
-    toast.style.animation = "toastOut 0.3s forwards";
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
-
-function paginate(items = [], page = 1, pageSize = 5) {
-  const total = items.length;
-  const totalPages = Math.ceil(total / pageSize) || 1;
-  const currentPage = Math.max(1, Math.min(page, totalPages));
-  const start = (currentPage - 1) * pageSize;
-  const paginatedItems = items.slice(start, start + pageSize);
-
-  const renderControls = (pageKey) => {
-    if (total <= pageSize) return "";
-    return `
-      <div class="pagination-wrap">
-        <span>Menampilkan ${start + 1}-${Math.min(start + pageSize, total)} dari ${total} data</span>
-        <div class="pagination-btns">
-          <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage <= 1 ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage - 1}">‹ Prev</button>
-          <span style="align-self:center;font-weight:600;padding:0 4px;">${currentPage} / ${totalPages}</span>
-          <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage >= totalPages ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage + 1}">Next ›</button>
-        </div>
-      </div>`;
-  };
-  return { items: paginatedItems, renderControls, currentPage, totalPages };
-}
+// Inisialisasi Firebase Realtime
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const dataRef = db.ref("spa_monitor_data");
 
 /* ==========================================================================
-   2. STATE & DATA MANAGEMENT
+   2. STATE & DATA MANAGEMENT (REALTIME SYNC)
    ========================================================================== */
 let state = {
   tab: "ringkasan",
@@ -124,17 +92,29 @@ function seedData() {
   };
 }
 
+// Load data otomatis tersinkron ke semua perangkat
 function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) { state.data = JSON.parse(raw); return; }
-  } catch (e) { }
-  state.data = seedData();
-  save();
+  dataRef.on("value", (snapshot) => {
+    const val = snapshot.val();
+    if (val) {
+      state.data = val;
+    } else {
+      state.data = seedData();
+      save();
+    }
+    renderTab();
+  });
 }
 
+// Simpan data ke server cloud
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data)); } catch (e) { console.error("Gagal menyimpan", e); }
+  if (state.data) {
+    dataRef.set(state.data, (error) => {
+      if (error) {
+        showToast("Gagal menyelaraskan data ke cloud", "error");
+      }
+    });
+  }
 }
 
 /* ==========================================================================
