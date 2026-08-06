@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. CONSTANTS, HELPERS & FIREBASE CONFIG
+   1. CONSTANTS, HELPERS & FIREBASE / SUPABASE CONFIG
    ========================================================================== */
 const uid = () => Math.random().toString(36).slice(2, 10);
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -25,31 +25,41 @@ const ICONS = {
 };
 
 // KONFIGURASI SUPABASE
-const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co"; // Ganti dengan URL dari menu Data API
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcW1ubWd3a2lmYmJoamhlcXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5ODE3MTYsImV4cCI6MjEwMTU1NzcxNn0.3n3Yjo-JqZqKMnit4_qQemuvjOE9U7ipq8VOTSxX_9I"; // Ganti dengan Publishable key yang kamu copy
+const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcW1ubWd3a2lmYmJoamhlcXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5ODE3MTYsImV4cCI6MjEwMTU1NzcxNn0.3n3Yjo-JqZqKMnit4_qQemuvjOE9U7ipq8VOTSxX_9I";
 
 const supabaseClient = (typeof supabase !== "undefined") 
   ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) 
   : null;
 
-if (typeof firebase !== "undefined" && !firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
-const db = typeof firebase !== "undefined" ? firebase.database() : null;
-const dataRef = db ? db.ref("spa_monitor_data") : null;
-
-function showToast(msg, type = "info") {
+// FITUR 5: TOAST DENGAN TOMBOL UNDO (SLIDE/TOAST)
+function showToast(msg, type = "info", undoCallback = null) {
   const container = document.getElementById("toast-container");
   if (!container) return;
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   const iconMap = { success: "✓", error: "✕", info: "ℹ" };
-  toast.innerHTML = `<span>${iconMap[type] || "ℹ"}</span> <span>${esc(msg)}</span>`;
+  
+  let undoHtml = "";
+  if (undoCallback) {
+    undoHtml = `<button class="toast-undo-btn" id="toast-undo-btn">URUNGKAN</button>`;
+  }
+
+  toast.innerHTML = `<div style="display:flex;align-items:center;"><span>${iconMap[type] || "ℹ"}</span> <span style="margin-left:6px;">${esc(msg)}</span> ${undoHtml}</div>`;
   container.appendChild(toast);
-  setTimeout(() => {
+
+  let timer = setTimeout(() => {
     toast.style.animation = "toastOut 0.3s forwards";
     setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  }, undoCallback ? 5000 : 3000);
+
+  if (undoCallback) {
+    toast.querySelector("#toast-undo-btn")?.addEventListener("click", () => {
+      clearTimeout(timer);
+      undoCallback();
+      toast.remove();
+    });
+  }
 }
 
 function paginate(items = [], page = 1, pageSize = 5) {
@@ -62,11 +72,11 @@ function paginate(items = [], page = 1, pageSize = 5) {
   const renderControls = (pageKey) => {
     if (total <= pageSize) return "";
     return `
-      <div class="pagination-wrap">
-        <span>Menampilkan ${start + 1}-${Math.min(start + pageSize, total)} dari ${total} data</span>
-        <div class="pagination-btns">
+      <div class="pagination-wrap" style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;">
+        <span style="font-size:12px;color:var(--inkSoft)">Menampilkan ${start + 1}-${Math.min(start + pageSize, total)} dari ${total} data</span>
+        <div class="pagination-btns" style="display:flex;gap:4px;">
           <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage <= 1 ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage - 1}">‹ Prev</button>
-          <span style="align-self:center;font-weight:600;padding:0 4px;">${currentPage} / ${totalPages}</span>
+          <span style="align-self:center;font-weight:600;padding:0 6px;font-size:12px;">${currentPage} / ${totalPages}</span>
           <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage >= totalPages ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage + 1}">Next ›</button>
         </div>
       </div>`;
@@ -85,8 +95,26 @@ let state = {
   expPage: 1,
   custSearch: "",
   txSearch: "",
-  financeFilter: todayISO().slice(0, 7)
+  dashboardPeriod: "7d", // FITUR 2: Filter Periode ('today', '7d', 'thisMonth', 'all')
+  syncStatus: "online"   // FITUR 1: Status Sync ('online', 'syncing', 'offline')
 };
+
+function setSyncStatus(status) {
+  state.syncStatus = status;
+  const badge = document.getElementById("sync-status-badge");
+  if (!badge) return;
+  
+  if (status === "online") {
+    badge.className = "sync-badge sync-online";
+    badge.innerHTML = `<span class="sync-dot"></span> Terhubung Cloud`;
+  } else if (status === "syncing") {
+    badge.className = "sync-badge sync-syncing";
+    badge.innerHTML = `<span class="sync-dot"></span> Menyimpan...`;
+  } else {
+    badge.className = "sync-badge sync-offline";
+    badge.innerHTML = `<span class="sync-dot"></span> Mode Lokal`;
+  }
+}
 
 function seedData() {
   const svc = { baby: uid(), swim: uid(), momMassage: uid(), facial: uid(), newborn: uid() };
@@ -117,7 +145,7 @@ function seedData() {
       { id: stf.s2, name: "Bahlil", role: "Marketing", phone: "0813-3333-31313" },
     ],
     customers: [
-      { id: cust.a, name: "Yanti", babyName: "Yanto", dob: "2026-04-05", phone: "0811-2233-4455", address: "Jl. Mawar No. 12, Kel. Sukamaju" },
+      { id: cust.a, name: "Yanti", babyName: "Yanto", dob: "2026-08-05", phone: "0811-2233-4455", address: "Jl. Mawar No. 12, Kel. Sukamaju" },
       { id: cust.b, name: "Christian", babyName: "Ronaldo", dob: "2024-08-10", phone: "0822-5566-7788", address: "Perum Graha Indah Blok C2/15" },
       { id: cust.c, name: "Yani", babyName: "Yono", dob: "", phone: "0856-9988-7766", address: "-" },
     ],
@@ -137,9 +165,7 @@ function seedData() {
   };
 }
 
-// LOAD DATA INSTAN (0-DETIK) + REALTIME SYNC
 async function load() {
-  // 1. Tampilkan data dari cache lokal dulu
   const cached = localStorage.getItem("spa_data");
   if (cached) {
     try { state.data = JSON.parse(cached); } catch(e) {}
@@ -148,9 +174,9 @@ async function load() {
   }
   renderTab();
 
-  // 2. Tarik data dari Supabase
   if (supabaseClient) {
     try {
+      setSyncStatus("syncing");
       const { data, error } = await supabaseClient
         .from('spa_data')
         .select('payload')
@@ -160,15 +186,16 @@ async function load() {
       if (data && data.payload) {
         state.data = data.payload;
         localStorage.setItem("spa_data", JSON.stringify(data.payload));
+        setSyncStatus("online");
         renderTab();
       } else if (!data) {
         save();
       }
     } catch (err) {
       console.warn("Menggunakan data lokal:", err);
+      setSyncStatus("offline");
     }
 
-    // 3. Listener Realtime untuk mendeteksi perubahan dari jendela/HP lain
     supabaseClient
       .channel('public:spa_data')
       .on(
@@ -178,39 +205,44 @@ async function load() {
           if (payload.new && payload.new.payload) {
             state.data = payload.new.payload;
             localStorage.setItem("spa_data", JSON.stringify(payload.new.payload));
+            setSyncStatus("online");
             renderTab();
           }
         }
       )
       .subscribe();
+  } else {
+    setSyncStatus("offline");
   }
 }
 
-// SAVE DATA KE CLOUD & LOKAL
 async function save() {
   if (!state.data) return;
 
-  // Simpan di browser saat ini
   localStorage.setItem("spa_data", JSON.stringify(state.data));
 
-  // Simpan ke Supabase Cloud
   if (supabaseClient) {
     try {
+      setSyncStatus("syncing");
       const { error } = await supabaseClient
         .from('spa_data')
         .upsert({ id: 'main_data', payload: state.data, updated_at: new Date() });
 
       if (error) {
         console.error("Supabase Save Error:", error.message);
+        setSyncStatus("offline");
+      } else {
+        setSyncStatus("online");
       }
     } catch (err) {
       console.error("Network Error:", err);
+      setSyncStatus("offline");
     }
   }
 }
 
 /* ==========================================================================
-   3. APP RENDER
+   3. APP RENDER & HEADER FITUR 1 (SYNC BADGE)
    ========================================================================== */
 function render() {
   const page = document.body.getAttribute("data-page") || "ringkasan";
@@ -230,7 +262,7 @@ function renderTab() {
   const d = state.data;
 
   switch (state.tab) {
-    case "ringkasan": main.innerHTML = viewRingkasan(d); initCharts(d); break;
+    case "ringkasan": main.innerHTML = viewRingkasan(d); bindRingkasan(); initCharts(d); break;
     case "jadwal": main.innerHTML = viewJadwal(d); bindJadwal(); break;
     case "transaksi": main.innerHTML = viewTransaksi(d); bindTransaksi(); break;
     case "layanan": main.innerHTML = viewLayanan(d); bindLayanan(); break;
@@ -238,20 +270,29 @@ function renderTab() {
     case "pelanggan": main.innerHTML = viewPelanggan(d); bindPelanggan(); break;
     case "keuangan": main.innerHTML = viewKeuangan(d); bindKeuangan(); break;
     case "staf": main.innerHTML = viewStaf(d); bindStaf(); break;
-    default: main.innerHTML = viewRingkasan(d); initCharts(d); break;
+    default: main.innerHTML = viewRingkasan(d); bindRingkasan(); initCharts(d); break;
   }
 }
 
+// FITUR 1: Header Tambahan Cloud Sync Badge
 function header(title, sub) {
+  const syncClass = state.syncStatus === 'online' ? 'sync-online' : (state.syncStatus === 'syncing' ? 'sync-syncing' : 'sync-offline');
+  const syncLabel = state.syncStatus === 'online' ? 'Terhubung Cloud' : (state.syncStatus === 'syncing' ? 'Menyimpan...' : 'Mode Lokal');
+
   return `
     <div class="section-header">
       <div class="header-title-group">
         <h1 class="section-title fx-display">${esc(title)}</h1>
         <p class="section-sub">${esc(sub)}</p>
       </div>
-      <div class="header-clock">
-        <div class="clock-time" id="realtime-clock">00:00:00</div>
-        <div class="clock-date" id="realtime-date">Senin, 1 Jan 2026</div>
+      <div style="display:flex;align-items:center;">
+        <div id="sync-status-badge" class="sync-badge ${syncClass}">
+          <span class="sync-dot"></span> ${syncLabel}
+        </div>
+        <div class="header-clock">
+          <div class="clock-time" id="realtime-clock">00:00:00</div>
+          <div class="clock-date" id="realtime-date">Senin, 1 Jan 2026</div>
+        </div>
       </div>
     </div>
   `;
@@ -267,26 +308,68 @@ function kpiCard(label, value, iconKey, tint) {
 }
 
 /* ==========================================================================
-   4. MODULE: RINGKASAN
+   4. MODULE: RINGKASAN (FITUR 2 & 3: FILTER PERIODE & INTERACTIVE TOOLTIP SVG)
    ========================================================================== */
+function filterDataByPeriod(txList = [], expList = [], period = "7d") {
+  const now = new Date();
+  const todayStr = todayISO();
+  
+  return {
+    tx: txList.filter(t => {
+      if (period === "today") return t.date === todayStr;
+      if (period === "7d") {
+        const diffDays = (now - new Date(t.date)) / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 7;
+      }
+      if (period === "thisMonth") return t.date.slice(0, 7) === todayStr.slice(0, 7);
+      return true; // 'all'
+    }),
+    exp: expList.filter(e => {
+      if (period === "today") return e.date === todayStr;
+      if (period === "7d") {
+        const diffDays = (now - new Date(e.date)) / (1000 * 60 * 60 * 24);
+        return diffDays >= 0 && diffDays <= 7;
+      }
+      if (period === "thisMonth") return e.date.slice(0, 7) === todayStr.slice(0, 7);
+      return true; // 'all'
+    })
+  };
+}
+
 function viewRingkasan(d) {
-  const totalRevenue = (d.transactions || []).reduce((s, t) => s + t.amount, 0);
-  const totalExpense = (d.expenses || []).reduce((s, e) => s + e.amount, 0);
+  const filtered = filterDataByPeriod(d.transactions || [], d.expenses || [], state.dashboardPeriod);
+  
+  const totalRevenue = filtered.tx.reduce((s, t) => s + t.amount, 0);
+  const totalExpense = filtered.exp.reduce((s, e) => s + e.amount, 0);
   const netProfit = totalRevenue - totalExpense;
   const lowStock = (d.inventory || []).filter(i => i.stock <= i.minStock);
 
   return `
     ${header("Ringkasan Usaha", "Gambaran umum performa Ulfa Baby Spa")}
+    
+    <!-- FITUR 2: Tombol Filter Periode -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+      <h3 style="margin:0; font-size:15px; font-weight:700; color:var(--ink);">📊 Performa Keuangan</h3>
+      <div class="period-filter-group">
+        <button class="period-btn ${state.dashboardPeriod === 'today' ? 'active' : ''}" data-period="today">Hari Ini</button>
+        <button class="period-btn ${state.dashboardPeriod === '7d' ? 'active' : ''}" data-period="7d">7 Hari Terakhir</button>
+        <button class="period-btn ${state.dashboardPeriod === 'thisMonth' ? 'active' : ''}" data-period="thisMonth">Bulan Ini</button>
+        <button class="period-btn ${state.dashboardPeriod === 'all' ? 'active' : ''}" data-period="all">Semua</button>
+      </div>
+    </div>
+
     <div class="kpi-grid">
       ${kpiCard("Total Pendapatan", fmtIDR(totalRevenue), "wallet", "var(--sage)")}
       ${kpiCard("Total Pengeluaran", fmtIDR(totalExpense), "down", "var(--blush)")}
       ${kpiCard("Laba Bersih", fmtIDR(netProfit), "up", netProfit >= 0 ? "var(--sage)" : "var(--danger)")}
-      ${kpiCard("Total Booking", (d.transactions || []).length, "receipt", "var(--aqua)")}
+      ${kpiCard("Total Booking", filtered.tx.length, "receipt", "var(--aqua)")}
     </div>
+    
     <div class="charts-row">
-      <div class="fx-card"><div class="card-title">Tren Pendapatan</div><div id="revenueChart"></div></div>
+      <div class="fx-card" style="position:relative;"><div class="card-title">Tren Pendapatan</div><div id="revenueChart"></div></div>
       <div class="fx-card"><div class="card-title">Layanan Terlaris</div><div id="servicesChart"></div></div>
     </div>
+
     ${lowStock.length > 0 ? `
     <div class="fx-card low-stock-card">
       <div class="low-alert-title">${ICONS.alert.replace('currentColor', '#8A5A1E')} Stok Menipis (${lowStock.length})</div>
@@ -297,17 +380,29 @@ function viewRingkasan(d) {
   `;
 }
 
+function bindRingkasan() {
+  document.querySelectorAll('[data-period]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.dashboardPeriod = btn.dataset.period;
+      renderTab();
+    });
+  });
+}
+
+// FITUR 3: SVG Interactive Tooltip implementation
 function initCharts(d) {
   const revWrap = document.getElementById("revenueChart");
   const svcWrap = document.getElementById("servicesChart");
   if (!revWrap || !svcWrap) return;
 
+  const filtered = filterDataByPeriod(d.transactions || [], [], state.dashboardPeriod);
+
   const map = {};
-  (d.transactions || []).forEach(t => { map[t.date] = (map[t.date] || 0) + t.amount; });
-  const days = Object.keys(map).sort().slice(-7);
+  filtered.tx.forEach(t => { map[t.date] = (map[t.date] || 0) + t.amount; });
+  const days = Object.keys(map).sort();
 
   if (days.length === 0) {
-    revWrap.innerHTML = `<div style="color:var(--inkSoft);font-size:13px;padding:30px 0;text-align:center;">Belum ada data transaksi.</div>`;
+    revWrap.innerHTML = `<div style="color:var(--inkSoft);font-size:13px;padding:40px 0;text-align:center;">Belum ada data transaksi pada periode ini.</div>`;
   } else {
     const revData = days.map(k => map[k]);
     const maxVal = Math.max(...revData, 1);
@@ -322,12 +417,13 @@ function initCharts(d) {
       x: padL + (revData.length > 1 ? i * stepX : chartW / 2),
       y: padT + chartH - (v / maxVal) * chartH,
       val: v,
-      dateStr: days[i].slice(5)
+      dateStr: fmtDate(days[i])
     }));
 
     const linePath = points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
 
     revWrap.innerHTML = `
+      <div id="chart-tooltip" class="chart-tooltip"></div>
       <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible;">
         <line x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" stroke="#f0dbe1" stroke-dasharray="3,3" stroke-width="1"/>
         <line x1="${padL}" y1="${padT + chartH / 2}" x2="${W - padR}" y2="${padT + chartH / 2}" stroke="#f0dbe1" stroke-dasharray="3,3" stroke-width="1"/>
@@ -335,23 +431,39 @@ function initCharts(d) {
 
         <path d="${linePath}" fill="none" stroke="#E85D88" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
 
-        ${points.map(p => `
-          <g class="chart-node">
-            <text x="${p.x}" y="${p.y - 10}" text-anchor="middle" fill="#4A1E2B" font-size="10.5" font-weight="700">
-              ${p.val >= 1000 ? (p.val / 1000) + 'k' : p.val}
-            </text>
+        ${points.map((p, idx) => `
+          <g class="chart-node" data-val="${fmtIDR(p.val)}" data-date="${p.dateStr}">
             <circle cx="${p.x}" cy="${p.y}" r="5" fill="#FFFFFF" stroke="#E85D88" stroke-width="2.5"/>
             <text x="${p.x}" y="${H - 8}" text-anchor="middle" fill="#7A626A" font-size="10">
-              ${p.dateStr}
+              ${days[idx].slice(5)}
             </text>
           </g>
         `).join('')}
       </svg>
     `;
+
+    // Interaktivitas Tooltip
+    const tooltip = document.getElementById("chart-tooltip");
+    revWrap.querySelectorAll(".chart-node").forEach(node => {
+      node.addEventListener("mouseenter", (e) => {
+        const val = node.dataset.val;
+        const date = node.dataset.date;
+        tooltip.innerHTML = `<div>${date}</div><div style="color:#E85D88;">${val}</div>`;
+        tooltip.classList.add("show");
+      });
+      node.addEventListener("mousemove", (e) => {
+        const rect = revWrap.getBoundingClientRect();
+        tooltip.style.left = (e.clientX - rect.left) + "px";
+        tooltip.style.top = (e.clientY - rect.top - 10) + "px";
+      });
+      node.addEventListener("mouseleave", () => {
+        tooltip.classList.remove("show");
+      });
+    });
   }
 
   const svcMap = {};
-  (d.transactions || []).forEach(t => {
+  filtered.tx.forEach(t => {
     const svc = (d.services || []).find(s => s.id === t.serviceId);
     const name = svc ? svc.name : "Lainnya";
     svcMap[name] = (svcMap[name] || 0) + 1;
@@ -359,7 +471,7 @@ function initCharts(d) {
   const top = Object.entries(svcMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
   if (top.length === 0) {
-    svcWrap.innerHTML = `<div style="color:var(--inkSoft);font-size:13px;padding:30px 0;text-align:center;">Belum ada data.</div>`;
+    svcWrap.innerHTML = `<div style="color:var(--inkSoft);font-size:13px;padding:40px 0;text-align:center;">Belum ada data.</div>`;
   } else {
     const maxCount = Math.max(...top.map(t => t[1]), 1);
     svcWrap.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;padding-top:4px;">
@@ -384,7 +496,6 @@ function initCharts(d) {
    ========================================================================== */
 function viewJadwal(d) {
   if (!d.schedules) d.schedules = [];
-  
   const sorted = [...d.schedules].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
   const upcomingTwo = sorted.filter(s => s.status === "Akan Datang").slice(0, 2);
 
@@ -501,7 +612,7 @@ function viewJadwal(d) {
       </table>
     </div>
 
-   <!-- POP-UP MODAL RESERVASI ELEGAN -->
+    <!-- POP-UP MODAL RESERVASI -->
     <div class="modal-overlay" id="sch-modal">
       <div class="modal-container">
         <div class="modal-header">
@@ -513,7 +624,6 @@ function viewJadwal(d) {
         </div>
 
         <div class="modal-body">
-          <!-- Row 1: Tanggal & Waktu -->
           <div class="modal-form-row">
             <div class="field">
               <label class="field-label" for="sch-date">📅 Tanggal Reservasi</label>
@@ -525,7 +635,6 @@ function viewJadwal(d) {
             </div>
           </div>
 
-          <!-- Row 2: Cari Pelanggan dengan Floating Dropdown -->
           <div class="field field-relative">
             <label class="field-label" for="sch-cust-search">👤 Cari & Pilih Pelanggan</label>
             <div class="input-with-icon">
@@ -535,7 +644,6 @@ function viewJadwal(d) {
             <div class="combobox-dropdown" id="sch-cust-dropdown"></div>
           </div>
 
-          <!-- Row 3: Layanan & Terapis -->
           <div class="modal-form-row">
             <div class="field">
               <label class="field-label" for="sch-service">💆 Layanan Spa</label>
@@ -553,7 +661,6 @@ function viewJadwal(d) {
             </div>
           </div>
 
-          <!-- Row 4: Tipe Layanan & Metode Bayar -->
           <div class="modal-form-row">
             <div class="field">
               <label class="field-label" for="sch-type">📍 Tipe Layanan</label>
@@ -572,7 +679,6 @@ function viewJadwal(d) {
             </div>
           </div>
 
-          <!-- Row Conditional Dynamic Inputs -->
           <div class="modal-form-row">
             <div class="field" id="sch-transport-wrap" style="display:none;">
               <label class="field-label" for="sch-transport">🚗 Biaya Transport (Rp)</label>
@@ -585,7 +691,6 @@ function viewJadwal(d) {
             </div>
           </div>
 
-          <!-- Row 5: Catatan -->
           <div class="field">
             <label class="field-label" for="sch-note">📝 Catatan Tambahan / Alamat</label>
             <input class="fx-input" id="sch-note" placeholder="Permintaan khusus, patokan alamat, dll...">
@@ -735,24 +840,22 @@ function bindJadwal() {
     const dpPaid = sch.dpAmount || 0;
     const remainingToPay = Math.max(0, totalAmount - dpPaid);
 
-    if (confirm(`Tandai perawatan selesai? Sisa pembayaran ${fmtIDR(remainingToPay)} akan otomatis dicatat.`)) {
-      sch.status = "Selesai";
-      if (remainingToPay > 0) {
-        if (!state.data.transactions) state.data.transactions = [];
-        state.data.transactions.unshift({
-          id: uid(),
-          date: sch.date,
-          customerId: sch.customerId,
-          serviceId: sch.serviceId,
-          staffId: sch.staffId,
-          type: sch.type || "Studio",
-          transportFee: sch.transportFee || 0,
-          amount: remainingToPay,
-          note: "Pelunasan Perawatan"
-        });
-      }
-      save(); showToast("Treatment selesai!", "success"); renderTab();
+    sch.status = "Selesai";
+    if (remainingToPay > 0) {
+      if (!state.data.transactions) state.data.transactions = [];
+      state.data.transactions.unshift({
+        id: uid(),
+        date: sch.date,
+        customerId: sch.customerId,
+        serviceId: sch.serviceId,
+        staffId: sch.staffId,
+        type: sch.type || "Studio",
+        transportFee: sch.transportFee || 0,
+        amount: remainingToPay,
+        note: "Pelunasan Perawatan"
+      });
     }
+    save(); showToast("Treatment selesai!", "success"); renderTab();
   }));
 
   document.querySelectorAll('[data-action="wa-sch"]').forEach(btn => btn.addEventListener("click", () => {
@@ -781,10 +884,23 @@ function bindJadwal() {
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
   }));
 
+  // FITUR 5: Hapus dengan Slide/Toast + Undo
   document.querySelectorAll('[data-action="del-sch"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Hapus agenda jadwal ini?")) return;
-    state.data.schedules = state.data.schedules.filter(s => s.id !== btn.dataset.id);
-    save(); showToast("Jadwal dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.schedules.findIndex(s => s.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.schedules[idx];
+    state.data.schedules.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Jadwal reservasi dihapus", "info", () => {
+      state.data.schedules.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Penghapusan dibatalkan", "success");
+    });
   }));
 }
 
@@ -883,10 +999,23 @@ function bindTransaksi() {
     renderTab();
   });
 
+  // FITUR 5: Hapus Transaksi dengan Toast Undo
   document.querySelectorAll('[data-action="del-tx"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Yakin hapus transaksi ini?")) return;
-    state.data.transactions = state.data.transactions.filter(t => t.id !== btn.dataset.id);
-    save(); showToast("Transaksi dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.transactions.findIndex(t => t.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.transactions[idx];
+    state.data.transactions.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Transaksi berhasil dihapus", "info", () => {
+      state.data.transactions.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Transaksi dikembalikan", "success");
+    });
   }));
 
   document.querySelectorAll('[data-action="wa-tx"]').forEach(btn => btn.addEventListener("click", () => {
@@ -1013,10 +1142,23 @@ function bindLayanan() {
     save(); showToast("Layanan ditambahkan", "success"); renderTab();
   });
 
+  // FITUR 5: Hapus Service dengan Toast Undo
   document.querySelectorAll('[data-action="del-svc"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Hapus layanan ini?")) return;
-    state.data.services = state.data.services.filter(s => s.id !== btn.dataset.id);
-    save(); showToast("Layanan dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.services.findIndex(s => s.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.services[idx];
+    state.data.services.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Layanan dihapus", "info", () => {
+      state.data.services.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Layanan dikembalikan", "success");
+    });
   }));
 
   document.getElementById("mb-add")?.addEventListener("click", () => {
@@ -1049,14 +1191,26 @@ function bindLayanan() {
   }));
 
   document.querySelectorAll('[data-action="del-mb"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Hapus paket membership ini?")) return;
-    state.data.memberships = state.data.memberships.filter(m => m.id !== btn.dataset.id);
-    save(); showToast("Membership dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.memberships.findIndex(m => m.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.memberships[idx];
+    state.data.memberships.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Paket membership dihapus", "info", () => {
+      state.data.memberships.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Membership dikembalikan", "success");
+    });
   }));
 }
 
 /* ==========================================================================
-   8. MODULE: STOK, PELANGGAN, KEUANGAN & STAF
+   8. MODULE: STOK, PELANGGAN, KEUANGAN & STAF (FITUR 4: ENHANCED PELANGGAN)
    ========================================================================== */
 function viewStok(d) {
   return `
@@ -1106,9 +1260,21 @@ function bindStok() {
   });
 
   document.querySelectorAll('[data-action="del-inv"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Hapus barang ini?")) return;
-    state.data.inventory = state.data.inventory.filter(i => i.id !== btn.dataset.id);
-    save(); showToast("Barang dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.inventory.findIndex(i => i.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.inventory[idx];
+    state.data.inventory.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Barang dihapus", "info", () => {
+      state.data.inventory.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Barang dikembalikan", "success");
+    });
   }));
 }
 
@@ -1139,15 +1305,41 @@ function getCustomerBookingCount(customerId, data) {
   return txCount + schCount;
 }
 
+// FITUR 4: MENU PELANGGAN ENHANCEMENTS (Filter Pencarian & Birthday Highlights)
 function viewPelanggan(d) {
-  const pg = paginate(d.customers || [], state.custPage, 6);
   const currentMonth = new Date().getMonth() + 1;
+  const birthdayCustomers = (d.customers || []).filter(c => c.dob && (new Date(c.dob).getMonth() + 1 === currentMonth));
+
+  let list = [...(d.customers || [])];
+  const q = (state.custSearch || "").toLowerCase().trim();
+  if (q) {
+    list = list.filter(c => c.name.toLowerCase().includes(q) || (c.babyName && c.babyName.toLowerCase().includes(q)) || (c.phone && c.phone.includes(q)));
+  }
+
+  const pg = paginate(list, state.custPage, 6);
 
   return `
     ${header("Data Pelanggan", "Kelola data ibu, bayi, tanggal lahir, riwayat kunjungan, dan lokasi")}
     
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-      <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--ink);">👥 Daftar Pelanggan Registered</h3>
+    ${birthdayCustomers.length > 0 ? `
+      <div class="birthday-alert-box">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:24px;">🎂</span>
+          <div>
+            <strong style="font-size:14px;color:#856404;">Ada ${birthdayCustomers.length} Bayi Ulang Tahun Bulan Ini!</strong>
+            <div style="font-size:12px;color:#856404;margin-top:2px;">
+              ${birthdayCustomers.map(c => `<b>${esc(c.babyName || 'Bayi')}</b> (${esc(c.name)})`).join(', ')}
+            </div>
+          </div>
+        </div>
+      </div>
+    ` : ''}
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-weight:700; font-size:13px; color:var(--inkSoft);">🔍 CARI PELANGGAN:</span>
+        <input class="fx-input" id="cust-search-input" value="${esc(state.custSearch || '')}" placeholder="Ketik nama ibu, bayi, HP..." style="width: 240px; padding: 7px 12px; font-size: 13px;">
+      </div>
       <button class="fx-btn" id="open-cust-modal">${ICONS.plus} Tambah Pelanggan Baru</button>
     </div>
 
@@ -1164,7 +1356,7 @@ function viewPelanggan(d) {
           </tr>
         </thead>
         <tbody>
-          ${pg.items.length === 0 ? '<tr class="empty-row"><td colspan="6">Belum ada data pelanggan.</td></tr>' : ''}
+          ${pg.items.length === 0 ? '<tr class="empty-row"><td colspan="6">Belum ada data pelanggan ditemukan.</td></tr>' : ''}
           ${pg.items.map(c => {
             const ageStr = c.dob ? calcAge(c.dob) : (c.babyAge || "—");
             const isBirthdayMonth = c.dob && (new Date(c.dob).getMonth() + 1 === currentMonth);
@@ -1201,9 +1393,9 @@ function viewPelanggan(d) {
       <div class="modal-container">
         <div class="modal-header">
           <h3 class="modal-title">➕ Tambah Pelanggan Baru</h3>
-          <button class="modal-close" id="close-cust-modal">✕</button>
+          <button class="modal-close-btn" id="close-cust-modal">✕</button>
         </div>
-        <div class="modal-form-vertical">
+        <div class="modal-body">
           <div class="field"><span class="field-label">Nama Ibu</span><input class="fx-input" id="cust-name" placeholder="mis. Bunda Yanti"></div>
           <div class="modal-form-row">
             <div class="field"><span class="field-label">Nama Bayi</span><input class="fx-input" id="cust-baby" placeholder="mis. Yanto"></div>
@@ -1211,7 +1403,9 @@ function viewPelanggan(d) {
           </div>
           <div class="field"><span class="field-label">No. HP (WhatsApp)</span><input class="fx-input" id="cust-phone" placeholder="08123456789"></div>
           <div class="field"><span class="field-label">Alamat Lengkap</span><input class="fx-input" id="cust-address" placeholder="Jl. Mawar No. 12 / Perum Indah Blok A"></div>
-          <button class="fx-btn" id="cust-add" style="margin-top: 8px; padding: 12px; width: 100%;">${ICONS.plus} Simpan Data Pelanggan</button>
+        </div>
+        <div class="modal-footer">
+          <button class="fx-btn fx-btn-submit" id="cust-add">${ICONS.plus} Simpan Data Pelanggan</button>
         </div>
       </div>
     </div>`;
@@ -1228,6 +1422,13 @@ function bindPelanggan() {
   openBtn?.addEventListener("click", showModal);
   closeBtn?.addEventListener("click", hideModal);
   modal?.addEventListener("click", (e) => { if (e.target === modal) hideModal(); });
+
+  const searchInput = document.getElementById("cust-search-input");
+  searchInput?.addEventListener("input", (e) => {
+    state.custSearch = e.target.value;
+    state.custPage = 1;
+    renderTab();
+  });
 
   document.getElementById("cust-add")?.addEventListener("click", () => {
     const name = document.getElementById("cust-name").value.trim();
@@ -1246,10 +1447,23 @@ function bindPelanggan() {
     save(); showToast("Pelanggan berhasil ditambahkan", "success"); hideModal(); renderTab();
   });
 
+  // FITUR 5: Hapus Customer dengan Toast Undo
   document.querySelectorAll('[data-action="del-cust"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Hapus data pelanggan ini?")) return;
-    state.data.customers = state.data.customers.filter(c => c.id !== btn.dataset.id);
-    save(); showToast("Pelanggan dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.customers.findIndex(c => c.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.customers[idx];
+    state.data.customers.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Pelanggan dihapus", "info", () => {
+      state.data.customers.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Data pelanggan dikembalikan", "success");
+    });
   }));
 
   document.querySelectorAll('[data-action="wa-reminder"]').forEach(btn => btn.addEventListener("click", () => {
@@ -1325,10 +1539,23 @@ function bindKeuangan() {
     save(); showToast("Pengeluaran dicatat", "success"); renderTab();
   });
 
+  // FITUR 5: Hapus Pengeluaran dengan Toast Undo
   document.querySelectorAll('[data-action="del-exp"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Hapus pengeluaran ini?")) return;
-    state.data.expenses = state.data.expenses.filter(e => e.id !== btn.dataset.id);
-    save(); showToast("Pengeluaran dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.expenses.findIndex(e => e.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.expenses[idx];
+    state.data.expenses.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Pengeluaran dihapus", "info", () => {
+      state.data.expenses.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Catatan pengeluaran dikembalikan", "success");
+    });
   }));
 
   document.querySelectorAll('[data-page-action="exp"]').forEach(btn => btn.addEventListener("click", () => {
@@ -1380,10 +1607,23 @@ function bindStaf() {
     save(); showToast("Staf ditambahkan", "success"); renderTab();
   });
 
+  // FITUR 5: Hapus Staf dengan Toast Undo
   document.querySelectorAll('[data-action="del-staf"]').forEach(btn => btn.addEventListener("click", () => {
-    if (!confirm("Hapus data staf ini?")) return;
-    state.data.staff = state.data.staff.filter(s => s.id !== btn.dataset.id);
-    save(); showToast("Staf dihapus", "info"); renderTab();
+    const id = btn.dataset.id;
+    const idx = state.data.staff.findIndex(s => s.id === id);
+    if (idx === -1) return;
+
+    const deletedItem = state.data.staff[idx];
+    state.data.staff.splice(idx, 1);
+    save();
+    renderTab();
+
+    showToast("Data staf dihapus", "info", () => {
+      state.data.staff.splice(idx, 0, deletedItem);
+      save();
+      renderTab();
+      showToast("Data staf dikembalikan", "success");
+    });
   }));
 }
 
