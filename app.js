@@ -141,44 +141,38 @@ function seedData() {
   };
 }
 
-// Load instan dari penyimpanan browser (0 detik) lalu sinkronkan ke Cloud
 function load() {
-  // Step 1: Ambil cache lokal di HP/Laptop (Langsung tampil instan!)
+  // 1. Ambil data dari storage browser
   const cachedData = localStorage.getItem("spa_data");
+  
   if (cachedData) {
     try {
       state.data = JSON.parse(cachedData);
-      renderTab(); // Render tampilan seketika tanpa menunggu internet
     } catch (e) {
-      console.error("Gagal membaca cache lokal:", e);
+      state.data = seedData();
     }
+  } else {
+    // Jika pertama kali buka / cache kosong, LANGSUNG tampilkan data awal (Tanpa Nunggu Firebase)
+    state.data = seedData();
   }
 
-  // Step 2: Tarik data terbaru dari Firebase Realtime Database di background
+  // 2. Tampilkan UI seketika (0 milidetik!)
+  renderTab();
+
+  // 3. Sinkronkan ke Firebase secara background (tanpa menahan/menghambat layar)
   if (dataRef) {
     dataRef.on("value", (snapshot) => {
       const val = snapshot.val();
       if (val) {
         state.data = val;
+        localStorage.setItem("spa_data", JSON.stringify(val));
+        renderTab(); // Perbarui tampilan halus jika ada data terbaru dari cloud
       } else {
-        state.data = seedData();
         save();
       }
-      // Update cache lokal dengan data terbari dari cloud
-      localStorage.setItem("spa_data", JSON.stringify(state.data));
-      renderTab();
     }, (error) => {
-      console.warn("Koneksi cloud terhambat, menggunakan data lokal:", error);
-      if (!state.data) {
-        state.data = seedData();
-        renderTab();
-      }
+      console.warn("Koneksi Firebase terhambat:", error);
     });
-  } else {
-    if (!state.data) {
-      state.data = seedData();
-      renderTab();
-    }
   }
 }
 
