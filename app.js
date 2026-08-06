@@ -600,22 +600,26 @@ function bindJadwal() {
   const dropdown = document.getElementById("sch-cust-dropdown");
 
   if (searchInput && dropdown) {
-    const renderDropdown = (query = "") => {
+   const renderDropdown = (query = "") => {
       const q = query.toLowerCase().trim();
       const filtered = (state.data.customers || []).filter(c => 
         c.name.toLowerCase().includes(q) || (c.babyName && c.babyName.toLowerCase().includes(q))
       );
 
       if (filtered.length === 0) {
-        dropdown.innerHTML = `<div class="combobox-item empty">Tidak ada pelanggan cocok</div>`;
+        dropdown.innerHTML = `<div class="combobox-item empty">Aduh, pelanggan tidak ditemukan 😅</div>`;
       } else {
         dropdown.innerHTML = filtered.map(c => `
           <div class="combobox-item" data-id="${c.id}" data-name="Bunda ${esc(c.name)} (${esc(c.babyName || 'Bayi')})">
-            <strong>Bunda ${esc(c.name)}</strong> <small>(Bayi: ${esc(c.babyName || '-')})</small>
+            <div class="cust-info">
+              <span class="cust-mom">👩 Bunda ${esc(c.name)}</span>
+              <span class="cust-baby">👶 ${esc(c.babyName || '-')}</span>
+            </div>
+            <span class="cust-badge">Pilih ➔</span>
           </div>
         `).join("");
       }
-      dropdown.style.display = "block";
+      dropdown.classList.add("show");
     };
 
     searchInput.addEventListener("focus", () => renderDropdown(searchInput.value));
@@ -633,9 +637,10 @@ function bindJadwal() {
       }
     });
 
+   // Sembunyikan jika klik di luar
     document.addEventListener("click", (e) => {
       if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-        dropdown.style.display = "none";
+        dropdown.classList.remove("show");
       }
     });
   }
