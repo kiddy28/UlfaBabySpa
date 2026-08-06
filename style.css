@@ -1127,3 +1127,109 @@ table.fx-table {
     margin-top: 12px;
   }
 }
+
+/* ==========================================================================
+   FITUR BARU UI/UX ENHANCEMENTS
+   ========================================================================== */
+
+/* 1. Cloud Sync Status Badge */
+.sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 10px;
+}
+.sync-online { background: #E2F0D9; color: #385723; }
+.sync-syncing { background: #FFF3CD; color: #856404; }
+.sync-offline { background: #FDE8E8; color: #C53030; }
+
+.sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.sync-online .sync-dot { background: #28A745; box-shadow: 0 0 6px #28A745; }
+.sync-syncing .sync-dot { background: #FFC107; animation: blink 1s infinite; }
+.sync-offline .sync-dot { background: #DC3545; }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* 2. Filter Periode Dashboard */
+.period-filter-group {
+  display: flex;
+  gap: 6px;
+  background: var(--panel);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.period-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--inkSoft);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.period-btn.active {
+  background: var(--sage);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(232, 93, 136, 0.3);
+}
+
+/* 3. Dynamic Tooltip SVG */
+.chart-tooltip {
+  position: absolute;
+  background: #2D1A21;
+  color: #FFFFFF;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -120%);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  white-space: nowrap;
+}
+.chart-tooltip.show { opacity: 1; }
+
+.chart-node { cursor: pointer; }
+.chart-node circle { transition: r 0.2s ease, stroke-width 0.2s ease; }
+.chart-node:hover circle { r: 8; stroke-width: 3.5; }
+
+/* 4. Filter Pelanggan & Ultah Box */
+.birthday-alert-box {
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFF3CD 100%);
+  border: 1px solid #FFE699;
+  border-radius: 16px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 5. Toast dengan Tombol Undo */
+.toast-undo-btn {
+  background: #E85D88;
+  color: #FFFFFF;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-left: 10px;
+  cursor: pointer;
+}
+.toast-undo-btn:hover { background: #C9426B; }
