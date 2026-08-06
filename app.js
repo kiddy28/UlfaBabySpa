@@ -384,11 +384,17 @@ function applyRolePermissions() {
 
   if (profileBadge) {
     profileBadge.innerHTML = `
-      <div style="display:flex;flex-direction:column;overflow:hidden;">
+      <div class="user-info-text">
         <strong style="color:#fff;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;">${esc(state.currentUser.name)}</strong>
         <span style="color:var(--blush);font-size:10px;text-transform:uppercase;">${esc(state.currentUser.role)}</span>
       </div>
-      <button class="logout-btn" id="logout-btn">Keluar</button>
+      <button class="logout-btn" id="logout-btn" title="Keluar">
+        <svg class="logout-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+          <line x1="12" y1="2" x2="12" y2="12"></line>
+        </svg>
+        <span class="logout-text">Keluar</span>
+      </button>
     `;
 
     document.getElementById("logout-btn")?.addEventListener("click", () => {
@@ -398,8 +404,6 @@ function applyRolePermissions() {
       renderLoginModal();
     });
   }
-}
-
 /* ==========================================================================
    4. APP INITIALIZATION & PROTEKSI
    ========================================================================== */
