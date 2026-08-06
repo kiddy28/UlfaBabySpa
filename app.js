@@ -26,9 +26,8 @@ const ICONS = {
 
 // DATABASE AKUN LOKAL
 const USERS = [
-  { username: "owner", password: "admin123", name: "Ulfa (Owner)", role: "owner" },
-  { username: "admin", password: "admin123", name: "Admin Spa", role: "owner" },
-  { username: "kasir", password: "kasir123", name: "Kasir Spa", role: "kasir" }
+  { username: "admin", password: "Londoireng2026", name: "Ulfa (Owner)", role: "owner" },
+  { username: "user", password: "user123", name: "user 1", role: "user" }
 ];
 
 // KONFIGURASI SUPABASE
@@ -113,13 +112,13 @@ function setSyncStatus(status) {
   
   if (status === "online") {
     badge.className = "sync-badge sync-online";
-    badge.innerHTML = `<span class="sync-dot"></span> Terhubung Cloud`;
+    badge.innerHTML = `<span class="sync-dot"></span> Online`;
   } else if (status === "syncing") {
     badge.className = "sync-badge sync-syncing";
-    badge.innerHTML = `<span class="sync-dot"></span> Menyimpan...`;
+    badge.innerHTML = `<span class="sync-dot"></span> Conecting...`;
   } else {
     badge.className = "sync-badge sync-offline";
-    badge.innerHTML = `<span class="sync-dot"></span> Mode Lokal`;
+    badge.innerHTML = `<span class="sync-dot"></span> Offline`;
   }
 }
 
@@ -262,23 +261,56 @@ function renderLoginModal() {
 
   modal.innerHTML = `
     <div class="login-card">
-      <div class="login-brand-icon">👶</div>
+      <div class="login-brand-icon">
+        <img src="icon.png" alt="Ulfa Baby Spa Logo">
+        </div>
       <h2 class="login-title fx-display">Ulfa Baby Spa</h2>
-      <p class="login-sub">Masuk untuk mengelola sistem spa</p>
+      <p class="login-sub">Masuk untuk mengelola sistem</p>
       
-      <form class="login-form" id="login-form" onsubmit="return false;">
+      <form class="login-form" id="login-form">
         <div class="field">
           <label class="field-label" for="login-username">Username</label>
-          <input class="fx-input" id="login-username" placeholder="owner / admin / kasir" required autofocus>
+          <input class="fx-input" id="login-username" placeholder="Username" required autofocus>
         </div>
         <div class="field">
           <label class="field-label" for="login-password">Password</label>
           <input class="fx-input" type="password" id="login-password" placeholder="••••••••" required>
         </div>
-        <button type="button" id="btn-submit-login" class="fx-btn fx-btn-submit" style="margin-top:8px;">Masuk ke Aplikasi</button>
+        <button type="submit" class="fx-btn fx-btn-submit" style="margin-top:8px;">Masuk ke Aplikasi</button>
       </form>
     </div>
   `;
+
+  // MENANGKAP EVENT SUBMIT & MENCEGAH REFRESH HALAMAN
+  const form = document.getElementById("login-form");
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault(); // Mencegah browser refresh halaman
+      
+      const u = document.getElementById("login-username").value.trim().toLowerCase();
+      const p = document.getElementById("login-password").value;
+
+      const found = USERS.find(user => user.username === u && user.password === p);
+      if (found) {
+        state.currentUser = found;
+        localStorage.setItem("spa_user", JSON.stringify(found));
+        showToast(`Selamat datang, ${found.name}!`, "success");
+        modal.remove();
+        
+        const currentPage = document.body.getAttribute("data-page") || "ringkasan";
+        if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(currentPage)) {
+          window.location.href = "jadwal.html";
+        } else {
+          applyRolePermissions();
+          renderTab();
+        }
+      } else {
+        // TAMPILKAN NOTIFIKASI ERROR JIKA SALAH
+        showToast("Username atau Password salah!", "error");
+      }
+    });
+  }
+}
 
   const processLogin = () => {
     const uInput = document.getElementById("login-username");
@@ -1154,7 +1186,7 @@ function bindTransaksi() {
     let phoneStr = String(cust.phone).replace(/\D/g, "");
     if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
 
-    const pesan = `Terima kasih atas pembayarannya di *Ulfa Baby Spa*! 👋😊\n\n🧾 *NOTA PEMBAYARAN*\n📅 Tanggal: ${fmtDate(tx.date)}\n👤 Pelanggan: Bunda ${cust.name || '-'}\n💆 Layanan: ${svc ? svc.name : '-'}\n💳 Nominal Dibayar: *${fmtIDR(tx.amount)}* _(${tx.note || 'Lunas'})_\n\nSampai jumpa di perawatan berikutnya! 💖`;
+    const pesan = `Terima kasih atas pembayarannya di *Ulfa Baby Spa*! \n\n *NOTA PEMBAYARAN*\n Tanggal: ${fmtDate(tx.date)}\n Pelanggan: Bunda ${cust.name || '-'}\n Layanan: ${svc ? svc.name : '-'}\n Nominal Dibayar: *${fmtIDR(tx.amount)}* _(${tx.note || 'Lunas'})_\n\nSampai jumpa di perawatan berikutnya! `;
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
   }));
 
