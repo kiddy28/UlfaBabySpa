@@ -25,7 +25,7 @@ const ICONS = {
 };
 
 // KONFIGURASI SUPABASE
-const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co/rest/v1/"; // Ganti dengan URL dari menu Data API
+const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co"; // Ganti dengan URL dari menu Data API
 const SUPABASE_KEY = "sb_publishable_X3qJBXKiuYBuGZwHPwXcAg_iS74cVBn"; // Ganti dengan Publishable key yang kamu copy
 
 const supabaseClient = (typeof supabase !== "undefined") 
