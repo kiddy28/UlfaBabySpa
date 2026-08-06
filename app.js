@@ -141,52 +141,45 @@ function seedData() {
   };
 }
 
-// Load data terpadu (Cloud First untuk Sinkronisasi Antar Perangkat)
+/ Load data terpadu real-time dari Firebase Cloud
 function load() {
+  // 1. Ambil cache sementara agar UI langsung muncul
+  const cached = localStorage.getItem("spa_data");
+  if (cached && !state.data) {
+    try { state.data = JSON.parse(cached); } catch(e){}
+  }
+  renderTab();
+
+  // 2. Tautkan ke Firebase Cloud (Sinkronisasi Otomatis Antar Browser)
   if (dataRef) {
-    // Dengarkan perubahan data di Firebase secara Realtime
     dataRef.on("value", (snapshot) => {
       const val = snapshot.val();
       if (val) {
+        // Data ditemukan di Cloud -> Pakai data Cloud & update cache lokal
         state.data = val;
-        // Simpan salinan ke memori lokal browser
         localStorage.setItem("spa_data", JSON.stringify(val));
       } else {
-        // Jika Firebase benar-benar kosong, baru buat data awal
+        // Cloud kosong -> Inisialisasi data awal ke Cloud
         state.data = seedData();
-        save();
+        dataRef.set(state.data);
+        localStorage.setItem("spa_data", JSON.stringify(state.data));
       }
-      renderTab();
+      renderTab(); // Update tampilan secara otomatis
     }, (error) => {
       console.error("Firebase Error:", error);
-      showToast("Gagal mengambil data dari Cloud, memuat cache lokal.", "error");
-      
-      // Fallback ke cache lokal jika internet bermasalah
-      const cachedData = localStorage.getItem("spa_data");
-      state.data = cachedData ? JSON.parse(cachedData) : seedData();
-      renderTab();
+      showToast("Gagal sync ke Cloud! Cek Rules Firebase.", "error");
     });
-  } else {
-    const cachedData = localStorage.getItem("spa_data");
-    state.data = cachedData ? JSON.parse(cachedData) : seedData();
-    renderTab();
   }
 }
 
 // Simpan data wajib push ke Firebase Cloud
 function save() {
   if (state.data) {
-    // Simpan ke cache lokal komputer saat ini
     localStorage.setItem("spa_data", JSON.stringify(state.data));
-    
-    // Kirim & kunci data di Firebase Cloud
     if (dataRef) {
       dataRef.set(state.data, (error) => {
         if (error) {
-          console.error("Gagal simpan ke Firebase:", error);
-          showToast("Gagal menyinkronkan data ke Cloud! Cek aturan Firebase.", "error");
-        } else {
-          console.log("Data berhasil tersimpan di Cloud.");
+          showToast("Gagal menyimpan ke Cloud!", "error");
         }
       });
     }
