@@ -1259,15 +1259,24 @@ table.fx-table {
 }
 
 .login-brand-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 12px;
-  background: #FFF0F4;
-  border-radius: 18px;
+  width: 90px;                  /* Ukuran dipebesar dan tetap proporsional */
+  height: 90px;
+  margin: 0 auto 16px;
+  background: #ffffff;
+  border-radius: 50%;           /* Tampilan melingkar yang halus */
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  box-shadow: 0 8px 20px rgba(232, 93, 136, 0.15); /* Shadow lembut tema pink */
+  padding: 8px;
+  border: 2px solid #FDECF1;
+}
+
+.login-brand-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;          /* Memastikan gambar logo tidak terdistorsi/gepeng */
+  border-radius: 50%;
 }
 
 .login-title {
