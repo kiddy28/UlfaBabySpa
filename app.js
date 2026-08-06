@@ -141,34 +141,61 @@ function seedData() {
   };
 }
 
-// Load data terpadu real-time dari Firebase Cloud
+// Load data terpadu real-time dengan Timeout Guard untuk Guest Mode
 function load() {
-  // 1. Ambil cache sementara agar UI langsung muncul
+  let isLoaded = false;
+
+  // 1. Ambil cache lokal jika ada (langsung tampilkan)
   const cached = localStorage.getItem("spa_data");
   if (cached && !state.data) {
-    try { state.data = JSON.parse(cached); } catch(e){}
+    try { 
+      state.data = JSON.parse(cached); 
+      renderTab();
+    } catch(e) {}
   }
-  renderTab();
 
-  // 2. Tautkan ke Firebase Cloud (Sinkronisasi Otomatis Antar Browser)
+  // 2. TIMEOUT GUARD (2 Detik): Jika cloud/Guest Mode gantung, paksa muat seedData
+  const fallbackTimeout = setTimeout(() => {
+    if (!isLoaded && !state.data) {
+      console.warn("Koneksi cloud lambat/gantung (Guest mode). Menggunakan data awal.");
+      state.data = seedData();
+      renderTab();
+    }
+  }, 2000);
+
+  // 3. Tautkan ke Firebase Cloud
   if (dataRef) {
     dataRef.on("value", (snapshot) => {
+      isLoaded = true;
+      clearTimeout(fallbackTimeout);
+      
       const val = snapshot.val();
       if (val) {
-        // Data ditemukan di Cloud -> Pakai data Cloud & update cache lokal
         state.data = val;
-        localStorage.setItem("spa_data", JSON.stringify(val));
+        try { localStorage.setItem("spa_data", JSON.stringify(val)); } catch(e){}
       } else {
-        // Cloud kosong -> Inisialisasi data awal ke Cloud
         state.data = seedData();
         dataRef.set(state.data);
-        localStorage.setItem("spa_data", JSON.stringify(state.data));
       }
-      renderTab(); // Update tampilan secara otomatis
+      renderTab();
     }, (error) => {
       console.error("Firebase Error:", error);
-      showToast("Gagal sync ke Cloud! Cek Rules Firebase.", "error");
+      isLoaded = true;
+      clearTimeout(fallbackTimeout);
+      
+      if (!state.data) {
+        state.data = seedData();
+        renderTab();
+      }
+      showToast("Koneksi cloud terhambat. Menggunakan data lokal.", "error");
     });
+  } else {
+    isLoaded = true;
+    clearTimeout(fallbackTimeout);
+    if (!state.data) {
+      state.data = seedData();
+      renderTab();
+    }
   }
 }
 
