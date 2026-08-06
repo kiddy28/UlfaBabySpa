@@ -242,9 +242,6 @@ async function save() {
 }
 
 /* ==========================================================================
-   3. SISTEM LOGIN & OTORISASI (LANGSUNG TERIKAT SEMENTARA LOAD)
-   ========================================================================== */
-/* ==========================================================================
    3. SISTEM LOGIN & OTORISASI
    ========================================================================== */
 function renderLoginModal() {
@@ -284,107 +281,33 @@ function renderLoginModal() {
     </div>
   `;
 
-  // MENANGKAP EVENT SUBMIT & MENCEGAH REFRESH HALAMAN
   const form = document.getElementById("login-form");
   if (form) {
     form.addEventListener("submit", (e) => {
-      e.preventDefault(); // Mencegah browser refresh
-      
-      const u = document.getElementById("login-username").value.trim().toLowerCase();
-      const p = document.getElementById("login-password").value;
-
-      const found = USERS.find(user => user.username === u && user.password === p);
-      if (found) {
-        state.currentUser = found;
-        localStorage.setItem("spa_user", JSON.stringify(found));
-        showToast(`Selamat datang, ${found.name}!`, "success");
-        modal.remove();
-        
-        const currentPage = document.body.getAttribute("data-page") || "ringkasan";
-        if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(currentPage)) {
-          window.location.href = "jadwal.html";
-        } else {
-          applyRolePermissions();
-          renderTab();
-        }
-      } else {
-        // TAMPILKAN POPUP ERROR JIKA SALAH
-        showToast("Username atau Password salah!", "error");
-      }
-    });
-  }
-}
-
-  // MENANGKAP EVENT SUBMIT & MENCEGAH REFRESH HALAMAN
-  const form = document.getElementById("login-form");
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault(); // Mencegah browser refresh halaman
-      
-      const u = document.getElementById("login-username").value.trim().toLowerCase();
-      const p = document.getElementById("login-password").value;
-
-      const found = USERS.find(user => user.username === u && user.password === p);
-      if (found) {
-        state.currentUser = found;
-        localStorage.setItem("spa_user", JSON.stringify(found));
-        showToast(`Selamat datang, ${found.name}!`, "success");
-        modal.remove();
-        
-        const currentPage = document.body.getAttribute("data-page") || "ringkasan";
-        if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(currentPage)) {
-          window.location.href = "jadwal.html";
-        } else {
-          applyRolePermissions();
-          renderTab();
-        }
-      } else {
-        // TAMPILKAN NOTIFIKASI ERROR JIKA SALAH
-        showToast("Username atau Password salah!", "error");
-      }
-    });
-  }
-}
-
-  const processLogin = () => {
-    const uInput = document.getElementById("login-username");
-    const pInput = document.getElementById("login-password");
-    if (!uInput || !pInput) return;
-
-    const u = uInput.value.trim().toLowerCase();
-    const p = pInput.value;
-
-    if (!u || !p) {
-      showToast("Lengkapi Username dan Password!", "error");
-      return;
-    }
-
-    const found = USERS.find(user => user.username === u && user.password === p);
-    if (found) {
-      state.currentUser = found;
-      localStorage.setItem("spa_user", JSON.stringify(found));
-      showToast(`Selamat datang, ${found.name}!`, "success");
-      modal.remove();
-      
-      const currentPage = document.body.getAttribute("data-page") || "ringkasan";
-      if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(currentPage)) {
-        window.location.href = "jadwal.html";
-      } else {
-        applyRolePermissions();
-        renderTab();
-      }
-    } else {
-      showToast("Username atau Password salah!", "error");
-    }
-  };
-
-  document.getElementById("btn-submit-login")?.addEventListener("click", processLogin);
-  document.getElementById("login-form")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
       e.preventDefault();
-      processLogin();
-    }
-  });
+      
+      const u = document.getElementById("login-username").value.trim().toLowerCase();
+      const p = document.getElementById("login-password").value;
+
+      const found = USERS.find(user => user.username === u && user.password === p);
+      if (found) {
+        state.currentUser = found;
+        localStorage.setItem("spa_user", JSON.stringify(found));
+        showToast(`Selamat datang, ${found.name}!`, "success");
+        modal.remove();
+        
+        const currentPage = document.body.getAttribute("data-page") || "ringkasan";
+        if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(currentPage)) {
+          window.location.href = "jadwal.html";
+        } else {
+          applyRolePermissions();
+          renderTab();
+        }
+      } else {
+        showToast("Username atau Password salah!", "error");
+      }
+    });
+  }
 }
 
 function applyRolePermissions() {
