@@ -24,17 +24,13 @@ const ICONS = {
   down: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>'
 };
 
-// KONFIGURASI FIREBASE REALTIME
-const firebaseConfig = {
-  apiKey: "AIzaSyAqUKV4q9MhJUiHbaKBUbHuLLET_G-fyx4",
-  authDomain: "ulfa-baby-spa.firebaseapp.com",
-  databaseURL: "https://ulfa-baby-spa-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "ulfa-baby-spa",
-  storageBucket: "ulfa-baby-spa.firebasestorage.app",
-  messagingSenderId: "711875401048",
-  appId: "1:711875401048:web:d4f57a07fab435cfdb812d",
-  measurementId: "G-CVCJDL869X"
-};
+// KONFIGURASI SUPABASE
+const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co/rest/v1/"; // Ganti dengan URL dari menu Data API
+const SUPABASE_KEY = "sb_publishable_X3qJBXKiuYBuGZwHPwXcAg_iS74cVBn"; // Ganti dengan Publishable key yang kamu copy
+
+const supabaseClient = (typeof supabase !== "undefined") 
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) 
+  : null;
 
 if (typeof firebase !== "undefined" && !firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
