@@ -28,7 +28,8 @@ const ICONS = {
 const firebaseConfig = {
   apiKey: "AIzaSyAqUKV4q9MhJUiHbaKBUbHuLLET_G-fyx4",
   authDomain: "ulfa-baby-spa.firebaseapp.com",
-  databaseURL: "https://ulfa-baby-spa-default-rtdb.firebaseio.com",
+  // UBAH BARIS DI BAWAH INI (Tambahkan asia-southeast1):
+  databaseURL: "https://ulfa-baby-spa-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ulfa-baby-spa",
   storageBucket: "ulfa-baby-spa.firebasestorage.app",
   messagingSenderId: "711875401048",
