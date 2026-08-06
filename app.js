@@ -208,7 +208,7 @@ function renderTab() {
 
   // JIKA DATA BELUM SELESAI DIMUAT DARI CLOUD, TAMPILKAN INDIKATOR LOADING (MENCEGAH BLANK WHITE SCREEN)
   if (!state.data) {
-    main.innerHTML = `<div style="text-align:center; padding:60px 20px; font-weight:700; color:var(--inkSoft); font-size:15px;">⏳ Memuat data dari server cloud...</div>`;
+    main.innerHTML = `<div style="text-align:center; padding:60px 20px; font-weight:700; color:var(--inkSoft); font-size:15px;">⏳ Sabar yakk.. lagi memuat data dari server cloud...</div>`;
     return;
   }
 
@@ -700,7 +700,7 @@ function bindJadwal() {
       ? `\n💳 DP Diterima: ${fmtIDR(dpPaid)}\n💵 Sisa Pelunasan: *${fmtIDR(remaining)}*`
       : `\n💵 Estimasi Biaya: *${fmtIDR(totalCost)}*`;
 
-    const pesan = `Halo Bunda ${cust.name || ''}! 👋😊\nKami ingin mengonfirmasi jadwal reservasi di Ulfa Baby Spa.\n📅 Tanggal: ${fmtDate(sch.date)}\n🕘 Jam: ${jamFmt}\n👶 Nama Bayi: ${cust.babyName || '-'}\n💆 Layanan: ${svc ? svc.name : '-'} (${sch.type || 'Studio'})\n👩‍⚕️ Terapis: ${stf ? stf.name : '-'}${dpStatusTxt}\n\nMohon konfirmasi kehadirannya ya, Bunda. Sampai jumpa! 💖`;
+    const pesan = `Halo Bunda ${cust.name || ''}! \nKami ingin mengonfirmasi jadwal reservasi di Ulfa Baby Spa.\n Tanggal: ${fmtDate(sch.date)}\n Jam: ${jamFmt}\n Nama Bayi: ${cust.babyName || '-'}\n Layanan: ${svc ? svc.name : '-'} (${sch.type || 'Studio'})\n Terapis: ${stf ? stf.name : '-'}${dpStatusTxt}\n\nMohon konfirmasi kehadirannya ya, Bunda. Sampai jumpa! `;
 
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
   }));
@@ -1183,7 +1183,7 @@ function bindPelanggan() {
     if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
 
     const ageStr = cust.dob ? calcAge(cust.dob) : 'bayi';
-    const pesan = `Halo Bunda ${cust.name}! 👋😊\nBagaimana kabar adek ${cust.babyName || 'si kecil'}? (Usia ${ageStr})\nSudah waktunya perawatan di *Ulfa Baby Spa* nih, Bunda! ✨`;
+    const pesan = `Halo Bunda ${cust.name}! \nBagaimana kabar adek ${cust.babyName || 'si kecil'}? (Usia ${ageStr})\nSudah waktunya perawatan di *Ulfa Baby Spa* nih, Bunda! `;
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
   }));
 
