@@ -1022,3 +1022,108 @@ table.fx-table {
   background: #e2f0d9;
   color: #385723;
 }
+
+/* ==========================================================================
+   PRINT STYLES (STRUK / NOTA THERMAL FIX)
+   ========================================================================== */
+
+/* 1. Sembunyikan elemen struk saat di layar aplikasi biasa */
+#print-area {
+  display: none;
+}
+
+/* 2. Aturan khusus saat jendela Print dibuka (window.print()) */
+@media print {
+  /* Sembunyikan SELURUH elemen aplikasi biasa (Sidebar, Main, Header, Toast, dll) */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Tampilkan HANYA elemen #print-area beserta isinya */
+  #print-area, #print-area * {
+    visibility: visible !important;
+  }
+
+  /* Atur posisi struk tepat di pojok kiri atas kertas */
+  #print-area {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Styling khusus Nota agar Pas di Ukuran Kertas Thermal / A4 */
+  .receipt-box {
+    width: 80mm; /* Ukuran standar printer kasir thermal (bisa diubah ke 100% jika A4) */
+    margin: 0 auto;
+    padding: 15px;
+    font-family: 'Courier New', Courier, monospace; /* Font khas mesin kasir */
+    color: #000000;
+    background: #ffffff;
+    border: none;
+    box-shadow: none;
+  }
+
+  .receipt-header {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .receipt-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 4px 0;
+  }
+
+  .receipt-sub, .receipt-contact {
+    font-size: 11px;
+    margin: 2px 0;
+  }
+
+  .receipt-divider {
+    border-top: 1px dashed #000000;
+    margin: 10px 0;
+  }
+
+  .receipt-info-table, .receipt-item-table {
+    width: 100%;
+    font-size: 11px;
+    border-collapse: collapse;
+  }
+
+  .receipt-info-table td, .receipt-item-table td, .receipt-item-table th {
+    padding: 3px 0;
+    vertical-align: top;
+  }
+
+  .text-left { text-align: left; }
+  .text-right { text-align: right; }
+  .font-bold { font-weight: bold; }
+
+  .receipt-total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 8px;
+  }
+
+  .receipt-status-tag {
+    text-align: center;
+    font-size: 12px;
+    font-weight: bold;
+    border: 1px solid #000000;
+    padding: 4px;
+    margin: 10px 0;
+    letter-spacing: 1px;
+  }
+
+  .receipt-footer {
+    text-align: center;
+    font-size: 10px;
+    margin-top: 12px;
+  }
+}
