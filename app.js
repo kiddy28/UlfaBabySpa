@@ -26,7 +26,7 @@ const ICONS = {
 
 // KONFIGURASI SUPABASE
 const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co"; // Ganti dengan URL dari menu Data API
-const SUPABASE_KEY = "sb_publishable_X3qJBXKiuYBuGZwHPwXcAg_iS74cVBn"; // Ganti dengan Publishable key yang kamu copy
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcW1ubWd3a2lmYmJoamhlcXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5ODE3MTYsImV4cCI6MjEwMTU1NzcxNn0.3n3Yjo-JqZqKMnit4_qQemuvjOE9U7ipq8VOTSxX_9I"; // Ganti dengan Publishable key yang kamu copy
 
 const supabaseClient = (typeof supabase !== "undefined") 
   ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) 
@@ -137,9 +137,9 @@ function seedData() {
   };
 }
 
-// Load data instan + Realtime Cloud Sync Supabase
+// LOAD DATA INSTAN (0-DETIK) + REALTIME SYNC
 async function load() {
-  // 1. Tampilkan dari cache lokal / seedData dulu (0 detik)
+  // 1. Tampilkan data dari cache lokal dulu
   const cached = localStorage.getItem("spa_data");
   if (cached) {
     try { state.data = JSON.parse(cached); } catch(e) {}
@@ -148,10 +148,10 @@ async function load() {
   }
   renderTab();
 
+  // 2. Tarik data dari Supabase
   if (supabaseClient) {
-    // 2. Tarik data terbaru saat ini dari Supabase
     try {
-      const { data } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('spa_data')
         .select('payload')
         .eq('id', 'main_data')
@@ -165,20 +165,20 @@ async function load() {
         save();
       }
     } catch (err) {
-      console.warn("Memakai data lokal:", err);
+      console.warn("Menggunakan data lokal:", err);
     }
 
-    // 3. LISTEN PERUBAHAN REALTIME (Agar Guest Mode / Browser lain ter-update otomatis)
+    // 3. Listener Realtime untuk mendeteksi perubahan dari jendela/HP lain
     supabaseClient
-      .channel('schema-db-changes')
+      .channel('public:spa_data')
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'spa_data', filter: 'id=eq.main_data' },
+        { event: '*', schema: 'public', table: 'spa_data' },
         (payload) => {
           if (payload.new && payload.new.payload) {
             state.data = payload.new.payload;
             localStorage.setItem("spa_data", JSON.stringify(payload.new.payload));
-            renderTab(); // Refresh tampilan instan begitu ada data baru masuk
+            renderTab();
           }
         }
       )
@@ -186,31 +186,25 @@ async function load() {
   }
 }
 
-// Simpan data ke memori lokal dan push ke Supabase Cloud
+// SAVE DATA KE CLOUD & LOKAL
 async function save() {
   if (!state.data) return;
 
-  // 1. Simpan ke cache browser lokal
+  // Simpan di browser saat ini
   localStorage.setItem("spa_data", JSON.stringify(state.data));
 
-  // 2. Push / Update ke Supabase Cloud
+  // Simpan ke Supabase Cloud
   if (supabaseClient) {
     try {
       const { error } = await supabaseClient
         .from('spa_data')
-        .upsert(
-          { id: 'main_data', payload: state.data, updated_at: new Date() },
-          { onConflict: 'id' }
-        );
+        .upsert({ id: 'main_data', payload: state.data, updated_at: new Date() });
 
       if (error) {
-        console.error("Gagal kirim ke Supabase:", error.message);
-        showToast("Gagal Sync Cloud: " + error.message, "error");
-      } else {
-        console.log("Data berhasil terkirim ke Supabase!");
+        console.error("Supabase Save Error:", error.message);
       }
     } catch (err) {
-      console.error("Error jaringan:", err);
+      console.error("Network Error:", err);
     }
   }
 }
