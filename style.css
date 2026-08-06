@@ -1299,17 +1299,31 @@ table.fx-table {
   text-align: left;
 }
 
+/* --- USER PROFILE BADGE IN SIDEBAR --- */
 .user-profile-badge {
   display: flex;
   align-items: center;
   justify-content: space-between;
   background: rgba(255, 255, 255, 0.1);
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 12px;
   margin-top: auto;
   font-size: 12px;
+  gap: 8px;
+  overflow: hidden; /* Sembunyikan elemen yang keluar dari bounds */
+  width: 100%;
 }
 
+/* Sembunyikan detail nama/role saat sidebar mengecil */
+.user-profile-badge > div {
+  opacity: 0;
+  width: 0;
+  transition: opacity 0.2s ease, width 0.2s ease;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Tombol keluar rapi & pas di tengah saat sidebar mengecil */
 .logout-btn {
   background: #E85D88;
   color: white;
@@ -1319,5 +1333,22 @@ table.fx-table {
   cursor: pointer;
   font-weight: bold;
   font-size: 11px;
+  flex-shrink: 0;
+  width: 100%;
+  text-align: center;
+  transition: all 0.2s ease;
 }
-.logout-btn:hover { background: #C9426B; }
+
+.logout-btn:hover {
+  background: #C9426B;
+}
+
+/* Tampilkan kembali nama & atur tombol berdampingan saat HOVER sidebar */
+.sidebar:hover .user-profile-badge > div {
+  opacity: 1;
+  width: auto;
+}
+
+.sidebar:hover .logout-btn {
+  width: auto;
+}
