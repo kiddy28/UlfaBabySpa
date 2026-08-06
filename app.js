@@ -186,21 +186,31 @@ async function load() {
   }
 }
 
-// Simpan data ke memori lokal dan push ke cloud Supabase
+// Simpan data ke memori lokal dan push ke Supabase Cloud
 async function save() {
   if (!state.data) return;
 
-  // Simpan ke cache browser komputer saat ini
+  // 1. Simpan ke cache browser lokal
   localStorage.setItem("spa_data", JSON.stringify(state.data));
 
-  // Push / Update data ke tabel Supabase
+  // 2. Push / Update ke Supabase Cloud
   if (supabaseClient) {
     try {
-      await supabaseClient
+      const { error } = await supabaseClient
         .from('spa_data')
-        .upsert({ id: 'main_data', payload: state.data, updated_at: new Date() });
+        .upsert(
+          { id: 'main_data', payload: state.data, updated_at: new Date() },
+          { onConflict: 'id' }
+        );
+
+      if (error) {
+        console.error("Gagal kirim ke Supabase:", error.message);
+        showToast("Gagal Sync Cloud: " + error.message, "error");
+      } else {
+        console.log("Data berhasil terkirim ke Supabase!");
+      }
     } catch (err) {
-      console.error("Gagal sinkron ke Supabase:", err);
+      console.error("Error jaringan:", err);
     }
   }
 }
