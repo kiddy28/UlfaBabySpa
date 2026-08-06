@@ -141,49 +141,64 @@ function seedData() {
   };
 }
 
+// Load instan dari penyimpanan browser (0 detik) lalu sinkronkan ke Cloud
 function load() {
-  let isLoaded = false;
-
-  // Bawaan Fallback: Jika cloud tidak merespon dalam 3 detik, pakai data lokal
-  const fallbackTimeout = setTimeout(() => {
-    if (!isLoaded) {
-      console.warn("Koneksi Firebase lambat/terkunci. Beralih ke data lokal.");
-      state.data = seedData();
-      renderTab();
+  // Step 1: Ambil cache lokal di HP/Laptop (Langsung tampil instan!)
+  const cachedData = localStorage.getItem("spa_data");
+  if (cachedData) {
+    try {
+      state.data = JSON.parse(cachedData);
+      renderTab(); // Render tampilan seketika tanpa menunggu internet
+    } catch (e) {
+      console.error("Gagal membaca cache lokal:", e);
     }
-  }, 3000);
+  }
 
+  // Step 2: Tarik data terbaru dari Firebase Realtime Database di background
   if (dataRef) {
-    dataRef.on(
-      "value",
-      (snapshot) => {
-        isLoaded = true;
-        clearTimeout(fallbackTimeout);
-        const val = snapshot.val();
-        if (val) {
-          state.data = val;
-        } else {
-          state.data = seedData();
-          save();
-        }
-        renderTab();
-      },
-      (error) => {
-        console.error("Firebase Error:", error);
-        isLoaded = true;
-        clearTimeout(fallbackTimeout);
-        showToast("Akses Firebase ditolak/terkunci. Menggunakan data lokal.", "error");
+    dataRef.on("value", (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        state.data = val;
+      } else {
+        state.data = seedData();
+        save();
+      }
+      // Update cache lokal dengan data terbari dari cloud
+      localStorage.setItem("spa_data", JSON.stringify(state.data));
+      renderTab();
+    }, (error) => {
+      console.warn("Koneksi cloud terhambat, menggunakan data lokal:", error);
+      if (!state.data) {
         state.data = seedData();
         renderTab();
       }
-    );
+    });
   } else {
-    isLoaded = true;
-    clearTimeout(fallbackTimeout);
-    state.data = seedData();
-    renderTab();
+    if (!state.data) {
+      state.data = seedData();
+      renderTab();
+    }
   }
 }
+
+// Simpan data ke browser dan cloud secara bersamaan
+function save() {
+  if (state.data) {
+    // Simpan ke memori HP/Laptop dulu agar respon tombol sangat cepat
+    localStorage.setItem("spa_data", JSON.stringify(state.data));
+    
+    // Kirim perubahan ke Firebase Cloud
+    if (dataRef) {
+      dataRef.set(state.data, (error) => {
+        if (error) {
+          showToast("Gagal menyelaraskan data ke cloud", "error");
+        }
+      });
+    }
+  }
+}
+
 /* ==========================================================================
    3. APP RENDER
    ========================================================================== */
