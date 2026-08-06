@@ -532,3 +532,218 @@ table.fx-table {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ==========================================================================
+   MODAL / POP-UP STYLES IMPROVED
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(30, 20, 25, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease-in-out;
+  padding: 16px;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-container {
+  background: #ffffff;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(20px) scale(0.96);
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal-overlay.active .modal-container {
+  transform: translateY(0) scale(1);
+}
+
+/* Modal Header */
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #f2e6e9;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #fff9fa;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #4a1e2b;
+  margin: 0 0 4px 0;
+}
+
+.modal-sub {
+  font-size: 12px;
+  color: #8c727a;
+  margin: 0;
+}
+
+.modal-close-btn {
+  background: #f2e6e9;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #4a1e2b;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: #e85d88;
+  color: #ffffff;
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .modal-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-relative {
+  position: relative;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #61464f;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.fx-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e8d8dd;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: #2b1a20;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.fx-input:focus {
+  border-color: #e85d88;
+  box-shadow: 0 0 0 3px rgba(232, 93, 136, 0.15);
+}
+
+/* Floating Combobox Dropdown */
+.combobox-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e8d8dd;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  max-height: 180px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+}
+
+.combobox-item {
+  padding: 10px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  border-bottom: 1px solid #f8eff1;
+  transition: background 0.15s;
+}
+
+.combobox-item:last-child {
+  border-bottom: none;
+}
+
+.combobox-item:hover {
+  background: #fdecf1;
+}
+
+.combobox-item.empty {
+  color: #999;
+  cursor: default;
+}
+
+/* Modal Footer & Button */
+.modal-footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f2e6e9;
+  background: #fff;
+}
+
+.fx-btn-submit {
+  width: 100%;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #e85d88, #d44873);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 14px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(232, 93, 136, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.fx-btn-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(232, 93, 136, 0.4);
+}
+
+.fx-btn-submit:active {
+  transform: translateY(0);
+}
