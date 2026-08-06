@@ -1233,3 +1233,82 @@ table.fx-table {
   cursor: pointer;
 }
 .toast-undo-btn:hover { background: #C9426B; }
+
+/* ==========================================================================
+   AUTHENTICATION & LOGIN OVERLAY
+   ========================================================================== */
+.login-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: linear-gradient(135deg, #4A1E2B 0%, #2D1A21 100%);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  background: #ffffff;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  text-align: center;
+}
+
+.login-brand-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 12px;
+  background: #FFF0F4;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.login-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #4A1E2B;
+  margin: 0 0 4px 0;
+}
+
+.login-sub {
+  font-size: 13px;
+  color: #7A626A;
+  margin: 0 0 24px 0;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px 12px;
+  border-radius: 12px;
+  margin-top: auto;
+  font-size: 12px;
+}
+
+.logout-btn {
+  background: #E85D88;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 11px;
+}
+.logout-btn:hover { background: #C9426B; }
