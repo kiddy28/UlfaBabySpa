@@ -470,60 +470,101 @@ function viewJadwal(d) {
       </table>
     </div>
 
+   <!-- POP-UP MODAL RESERVASI ELEGAN -->
     <div class="modal-overlay" id="sch-modal">
       <div class="modal-container">
         <div class="modal-header">
-          <h3 class="modal-title">➕ Tambah Reservasi Baru</h3>
-          <button class="modal-close" id="close-sch-modal">✕</button>
+          <div class="modal-title-group">
+            <h3 class="modal-title">✨ Tambah Reservasi Baru</h3>
+            <p class="modal-sub">Isi detail jadwal reservasi dan metode pembayaran pelanggan</p>
+          </div>
+          <button class="modal-close-btn" id="close-sch-modal" aria-label="Tutup">✕</button>
         </div>
-        <div class="modal-form-vertical">
+
+        <div class="modal-body">
+          <!-- Row 1: Tanggal & Waktu -->
           <div class="modal-form-row">
-            <div class="field"><span class="field-label">Tanggal Reservasi</span><input class="fx-input" type="date" id="sch-date" value="${todayISO()}"></div>
-            <div class="field"><span class="field-label">Jam</span><input class="fx-input" type="time" id="sch-time" value="09:00"></div>
+            <div class="field">
+              <label class="field-label" for="sch-date">📅 Tanggal Reservasi</label>
+              <input class="fx-input" type="date" id="sch-date" value="${todayISO()}">
+            </div>
+            <div class="field">
+              <label class="field-label" for="sch-time">⏰ Waktu / Jam</label>
+              <input class="fx-input" type="time" id="sch-time" value="09:00">
+            </div>
           </div>
 
-          <div class="field" style="position: relative;">
-            <span class="field-label">Cari & Pilih Pelanggan</span>
-            <input class="fx-input" id="sch-cust-search" placeholder="Ketik nama ibu / bayi untuk mencari..." autocomplete="off">
+          <!-- Row 2: Cari Pelanggan dengan Floating Dropdown -->
+          <div class="field field-relative">
+            <label class="field-label" for="sch-cust-search">👤 Cari & Pilih Pelanggan</label>
+            <div class="input-with-icon">
+              <input class="fx-input" id="sch-cust-search" placeholder="Ketik nama ibu atau bayi..." autocomplete="off">
+            </div>
             <input type="hidden" id="sch-customer-id">
             <div class="combobox-dropdown" id="sch-cust-dropdown"></div>
           </div>
 
-          <div class="modal-form-row">
-            <div class="field"><span class="field-label">Layanan</span><select class="fx-input" id="sch-service"><option value="">Pilih layanan</option>${(d.services || []).map(s => `<option value="${s.id}">${esc(s.name)} — ${fmtIDR(s.price)}</option>`).join("")}</select></div>
-            <div class="field"><span class="field-label">Terapis</span><select class="fx-input" id="sch-staff"><option value="">Pilih terapis</option>${(d.staff || []).map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
-          </div>
-
+          <!-- Row 3: Layanan & Terapis -->
           <div class="modal-form-row">
             <div class="field">
-              <span class="field-label">Tipe Layanan</span>
+              <label class="field-label" for="sch-service">💆 Layanan Spa</label>
+              <select class="fx-input" id="sch-service">
+                <option value="">-- Pilih Layanan --</option>
+                ${(d.services || []).map(s => `<option value="${s.id}">${esc(s.name)} — ${fmtIDR(s.price)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="sch-staff">👩‍⚕️ Terapis / Staf</label>
+              <select class="fx-input" id="sch-staff">
+                <option value="">-- Pilih Terapis --</option>
+                ${(d.staff || []).map(s => `<option value="${s.id}">${esc(s.name)} (${esc(s.role)})</option>`).join("")}
+              </select>
+            </div>
+          </div>
+
+          <!-- Row 4: Tipe Layanan & Metode Bayar -->
+          <div class="modal-form-row">
+            <div class="field">
+              <label class="field-label" for="sch-type">📍 Tipe Layanan</label>
               <select class="fx-input" id="sch-type">
-                <option value="Studio">Studio (Di Tempat)</option>
-                <option value="Home Care">Home Care (Kunjungan)</option>
+                <option value="Studio">🏢 Studio (Di Tempat)</option>
+                <option value="Home Care">🏠 Home Care (Kunjungan)</option>
               </select>
             </div>
             <div class="field">
-              <span class="field-label">Metode Pembayaran</span>
+              <label class="field-label" for="sch-pay-method">💳 Metode Pembayaran</label>
               <select class="fx-input" id="sch-pay-method">
-                <option value="Cash">Bayar di Tempat (Cash/Nanti)</option>
-                <option value="DP">Bayar Uang Muka (DP)</option>
-                <option value="Lunas">Langsung Lunas Sekarang</option>
+                <option value="Cash">💵 Bayar di Tempat (Cash)</option>
+                <option value="DP">💸 Bayar Uang Muka (DP)</option>
+                <option value="Lunas">✅ Langsung Lunas Sekarang</option>
               </select>
             </div>
           </div>
 
-          <div class="field" id="sch-transport-wrap" style="display:none;">
-            <span class="field-label">Biaya Transport (Rp)</span>
-            <input class="fx-input" type="number" id="sch-transport" placeholder="mis. 15000">
+          <!-- Row Conditional Dynamic Inputs -->
+          <div class="modal-form-row">
+            <div class="field" id="sch-transport-wrap" style="display:none;">
+              <label class="field-label" for="sch-transport">🚗 Biaya Transport (Rp)</label>
+              <input class="fx-input" type="number" id="sch-transport" placeholder="contoh: 15000">
+            </div>
+
+            <div class="field" id="sch-dp-wrap" style="display:none;">
+              <label class="field-label" for="sch-dp">💰 Nominal DP / Uang Muka (Rp)</label>
+              <input class="fx-input" type="number" id="sch-dp" placeholder="contoh: 50000">
+            </div>
           </div>
 
-          <div class="field" id="sch-dp-wrap" style="display:none;">
-            <span class="field-label">Nominal DP / Uang Muka (Rp)</span>
-            <input class="fx-input" type="number" id="sch-dp" placeholder="mis. 50000">
+          <!-- Row 5: Catatan -->
+          <div class="field">
+            <label class="field-label" for="sch-note">📝 Catatan Tambahan / Alamat</label>
+            <input class="fx-input" id="sch-note" placeholder="Permintaan khusus, patokan alamat, dll...">
           </div>
+        </div>
 
-          <div class="field"><span class="field-label">Catatan Tambahan</span><input class="fx-input" id="sch-note" placeholder="Permintaan khusus / alamat"></div>
-          <button class="fx-btn" id="sch-add" style="margin-top: 8px; padding: 12px; width: 100%;">${ICONS.plus} Simpan Reservasi</button>
+        <div class="modal-footer">
+          <button class="fx-btn fx-btn-submit" id="sch-add">
+            ${ICONS.plus} Simpan Reservasi
+          </button>
         </div>
       </div>
     </div>
