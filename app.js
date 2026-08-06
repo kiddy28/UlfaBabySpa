@@ -26,8 +26,9 @@ const ICONS = {
 
 // DATABASE AKUN LOKAL
 const USERS = [
-  { username: "Admin", password: "LondoIreng2026", name: "Ulfa (Owner)", role: "owner" },
-  { username: "User", password: "user123", name: "User Spa", role: "User" }
+  { username: "owner", password: "admin123", name: "Ulfa (Owner)", role: "owner" },
+  { username: "admin", password: "admin123", name: "Admin Spa", role: "owner" },
+  { username: "kasir", password: "kasir123", name: "Kasir Spa", role: "kasir" }
 ];
 
 // KONFIGURASI SUPABASE
@@ -39,8 +40,12 @@ const supabaseClient = (typeof supabase !== "undefined")
   : null;
 
 function showToast(msg, type = "info", undoCallback = null) {
-  const container = document.getElementById("toast-container");
-  if (!container) return;
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    document.body.appendChild(container);
+  }
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   const iconMap = { success: "✓", error: "✕", info: "ℹ" };
@@ -108,13 +113,13 @@ function setSyncStatus(status) {
   
   if (status === "online") {
     badge.className = "sync-badge sync-online";
-    badge.innerHTML = `<span class="sync-dot"></span> Online`;
+    badge.innerHTML = `<span class="sync-dot"></span> Terhubung Cloud`;
   } else if (status === "syncing") {
     badge.className = "sync-badge sync-syncing";
-    badge.innerHTML = `<span class="sync-dot"></span> Connecting...`;
+    badge.innerHTML = `<span class="sync-dot"></span> Menyimpan...`;
   } else {
     badge.className = "sync-badge sync-offline";
-    badge.innerHTML = `<span class="sync-dot"></span> Offline`;
+    badge.innerHTML = `<span class="sync-dot"></span> Mode Lokal`;
   }
 }
 
@@ -175,8 +180,10 @@ async function load() {
     state.data = seedData();
   }
   
-  applyRolePermissions();
-  renderTab();
+  if (state.currentUser) {
+    applyRolePermissions();
+    renderTab();
+  }
 
   if (supabaseClient) {
     try {
@@ -191,7 +198,7 @@ async function load() {
         state.data = data.payload;
         localStorage.setItem("spa_data", JSON.stringify(data.payload));
         setSyncStatus("online");
-        renderTab();
+        if (state.currentUser) renderTab();
       } else if (!data) {
         save();
       }
@@ -207,7 +214,7 @@ async function load() {
           state.data = payload.new.payload;
           localStorage.setItem("spa_data", JSON.stringify(payload.new.payload));
           setSyncStatus("online");
-          renderTab();
+          if (state.currentUser) renderTab();
         }
       })
       .subscribe();
@@ -236,7 +243,7 @@ async function save() {
 }
 
 /* ==========================================================================
-   3. SISTEM LOGIN & OTORISASI
+   3. SISTEM LOGIN & OTORISASI (LANGSUNG TERIKAT SEMENTARA LOAD)
    ========================================================================== */
 function renderLoginModal() {
   if (state.currentUser) {
@@ -259,24 +266,32 @@ function renderLoginModal() {
       <h2 class="login-title fx-display">Ulfa Baby Spa</h2>
       <p class="login-sub">Masuk untuk mengelola sistem spa</p>
       
-      <form class="login-form" id="login-form">
+      <form class="login-form" id="login-form" onsubmit="return false;">
         <div class="field">
           <label class="field-label" for="login-username">Username</label>
-          <input class="fx-input" id="login-username" placeholder="owner / kasir" required autofocus>
+          <input class="fx-input" id="login-username" placeholder="owner / admin / kasir" required autofocus>
         </div>
         <div class="field">
           <label class="field-label" for="login-password">Password</label>
           <input class="fx-input" type="password" id="login-password" placeholder="••••••••" required>
         </div>
-        <button type="submit" class="fx-btn fx-btn-submit" style="margin-top:8px;">Masuk ke Aplikasi</button>
+        <button type="button" id="btn-submit-login" class="fx-btn fx-btn-submit" style="margin-top:8px;">Masuk ke Aplikasi</button>
       </form>
     </div>
   `;
 
-  document.getElementById("login-form")?.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const u = document.getElementById("login-username").value.trim().toLowerCase();
-    const p = document.getElementById("login-password").value;
+  const processLogin = () => {
+    const uInput = document.getElementById("login-username");
+    const pInput = document.getElementById("login-password");
+    if (!uInput || !pInput) return;
+
+    const u = uInput.value.trim().toLowerCase();
+    const p = pInput.value;
+
+    if (!u || !p) {
+      showToast("Lengkapi Username dan Password!", "error");
+      return;
+    }
 
     const found = USERS.find(user => user.username === u && user.password === p);
     if (found) {
@@ -285,8 +300,8 @@ function renderLoginModal() {
       showToast(`Selamat datang, ${found.name}!`, "success");
       modal.remove();
       
-      // Jika kasir login di halaman terlarang, kembalikan ke jadwal
-      if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(state.tab)) {
+      const currentPage = document.body.getAttribute("data-page") || "ringkasan";
+      if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(currentPage)) {
         window.location.href = "jadwal.html";
       } else {
         applyRolePermissions();
@@ -295,6 +310,14 @@ function renderLoginModal() {
     } else {
       showToast("Username atau Password salah!", "error");
     }
+  };
+
+  document.getElementById("btn-submit-login")?.addEventListener("click", processLogin);
+  document.getElementById("login-form")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      processLogin();
+    }
   });
 }
 
@@ -302,7 +325,6 @@ function applyRolePermissions() {
   if (!state.currentUser) return;
   const isKasir = state.currentUser.role === "kasir";
 
-  // Sembunyikan menu nav sensitif untuk kasir
   document.querySelectorAll(".navbtn").forEach(btn => {
     const href = btn.getAttribute("href");
     if (isKasir && (href.includes("index.html") || href.includes("keuangan.html") || href.includes("staf.html"))) {
@@ -312,7 +334,6 @@ function applyRolePermissions() {
     }
   });
 
-  // Tampilkan Profile Badge & Logout
   let profileBadge = document.getElementById("user-profile-badge");
   const sidebar = document.querySelector(".sidebar");
   if (sidebar && !profileBadge) {
@@ -341,24 +362,23 @@ function applyRolePermissions() {
 }
 
 /* ==========================================================================
-   4. APP RENDER & PROTEKSI HALAMAN
+   4. APP INITIALIZATION & PROTEKSI
    ========================================================================== */
-function render() {
+function initApp() {
   const page = document.body.getAttribute("data-page") || "ringkasan";
   state.tab = page;
 
   if (!state.currentUser) {
     renderLoginModal();
-    return;
+  } else {
+    if (state.currentUser.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(page)) {
+      window.location.href = "jadwal.html";
+      return;
+    }
+    applyRolePermissions();
+    renderTab();
   }
-
-  // Proteksi Halaman Kasir
-  if (state.currentUser.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(page)) {
-    window.location.href = "jadwal.html";
-    return;
-  }
-
-  renderTab();
+  load();
 }
 
 function renderTab() {
@@ -1731,8 +1751,7 @@ function bindStaf() {
 /* ==========================================================================
    10. INITIALIZATION & PRINT RECEIPT
    ========================================================================== */
-load();
-render();
+initApp();
 
 function startRealtimeClock() {
   const updateClock = () => {
