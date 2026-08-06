@@ -137,74 +137,56 @@ function seedData() {
   };
 }
 
-// Load data terpadu real-time dengan Timeout Guard untuk Guest Mode
-function load() {
-  let isLoaded = false;
-
-  // 1. Ambil cache lokal jika ada (langsung tampilkan)
+// Load data instan dari cache lokal, lalu sinkronkan dari Supabase
+async function load() {
+  // 1. Ambil dari cache browser dulu agar aplikasi terbuka 0-detik
   const cached = localStorage.getItem("spa_data");
-  if (cached && !state.data) {
-    try { 
-      state.data = JSON.parse(cached); 
-      renderTab();
-    } catch(e) {}
-  }
-
-  // 2. TIMEOUT GUARD (2 Detik): Jika cloud/Guest Mode gantung, paksa muat seedData
-  const fallbackTimeout = setTimeout(() => {
-    if (!isLoaded && !state.data) {
-      console.warn("Koneksi cloud lambat/gantung (Guest mode). Menggunakan data awal.");
-      state.data = seedData();
-      renderTab();
-    }
-  }, 2000);
-
-  // 3. Tautkan ke Firebase Cloud
-  if (dataRef) {
-    dataRef.on("value", (snapshot) => {
-      isLoaded = true;
-      clearTimeout(fallbackTimeout);
-      
-      const val = snapshot.val();
-      if (val) {
-        state.data = val;
-        try { localStorage.setItem("spa_data", JSON.stringify(val)); } catch(e){}
-      } else {
-        state.data = seedData();
-        dataRef.set(state.data);
-      }
-      renderTab();
-    }, (error) => {
-      console.error("Firebase Error:", error);
-      isLoaded = true;
-      clearTimeout(fallbackTimeout);
-      
-      if (!state.data) {
-        state.data = seedData();
-        renderTab();
-      }
-      showToast("Koneksi cloud terhambat. Menggunakan data lokal.", "error");
-    });
+  if (cached) {
+    try { state.data = JSON.parse(cached); } catch(e) {}
   } else {
-    isLoaded = true;
-    clearTimeout(fallbackTimeout);
-    if (!state.data) {
-      state.data = seedData();
-      renderTab();
+    state.data = seedData();
+  }
+  renderTab(); // Langsung tampilkan UI ke layar
+
+  // 2. Ambil data terbaru dari tabel Supabase di cloud
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('spa_data')
+        .select('payload')
+        .eq('id', 'main_data')
+        .maybeSingle();
+
+      if (data && data.payload) {
+        // Jika ada data di cloud, update state dan simpan ke cache lokal
+        state.data = data.payload;
+        localStorage.setItem("spa_data", JSON.stringify(data.payload));
+        renderTab(); // Refresh UI dengan data cloud terbaru
+      } else if (!data) {
+        // Jika tabel Supabase masih kosong, upload data awal (seedData)
+        save();
+      }
+    } catch (err) {
+      console.warn("Memakai data lokal karena koneksi cloud offline:", err);
     }
   }
 }
 
-// Simpan data wajib push ke Firebase Cloud
-function save() {
-  if (state.data) {
-    localStorage.setItem("spa_data", JSON.stringify(state.data));
-    if (dataRef) {
-      dataRef.set(state.data, (error) => {
-        if (error) {
-          showToast("Gagal menyimpan ke Cloud!", "error");
-        }
-      });
+// Simpan data ke memori lokal dan push ke cloud Supabase
+async function save() {
+  if (!state.data) return;
+
+  // Simpan ke cache browser komputer saat ini
+  localStorage.setItem("spa_data", JSON.stringify(state.data));
+
+  // Push / Update data ke tabel Supabase
+  if (supabaseClient) {
+    try {
+      await supabaseClient
+        .from('spa_data')
+        .upsert({ id: 'main_data', payload: state.data, updated_at: new Date() });
+    } catch (err) {
+      console.error("Gagal sinkron ke Supabase:", err);
     }
   }
 }
