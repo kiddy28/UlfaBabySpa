@@ -888,3 +888,137 @@ table.fx-table {
   justify-content: center !important;
   background: #faf5f6 !important;
 }
+
+/* ==========================================================================
+   ALERT SCHEDULE BOX REDESIGN
+   ========================================================================== */
+.alert-schedule-box {
+  background: #ffffff;
+  border: 1.5px solid #f2d6de;
+  border-left: 5px solid #e85d88;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(232, 93, 136, 0.08);
+}
+
+.alert-schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.alert-schedule-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #4a1e2b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.alert-schedule-badge {
+  background: #fdecf1;
+  color: #e85d88;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Grid Layout Side-by-Side */
+.alert-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+/* Kartu Jadwal Individu */
+.alert-schedule-card {
+  background: #faf5f7;
+  border: 1px solid #f0e1e5;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.alert-schedule-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+}
+
+.sch-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #e8d0d7;
+  padding-bottom: 8px;
+}
+
+.sch-time-tag {
+  color: #e85d88;
+  font-size: 13px;
+}
+
+.sch-time-tag small {
+  color: #7a626a;
+}
+
+.sch-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sch-cust-name {
+  font-size: 15px;
+  font-weight: 800;
+  color: #2b1a20;
+}
+
+.sch-baby-name {
+  font-size: 12.5px;
+  color: #7a626a;
+  margin-bottom: 6px;
+}
+
+.sch-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 12px;
+  color: #523e45;
+  font-weight: 600;
+  background: #ffffff;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #f0e1e5;
+}
+
+/* Custom Badges Pembayaran */
+.badge-pay {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.badge-cash {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.badge-dp {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.badge-lunas {
+  background: #e2f0d9;
+  color: #385723;
+}
