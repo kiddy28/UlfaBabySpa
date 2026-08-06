@@ -142,33 +142,48 @@ function seedData() {
 }
 
 function load() {
-  if (dataRef) {
-    dataRef.on("value", (snapshot) => {
-      const val = snapshot.val();
-      if (val) {
-        state.data = val;
-      } else {
-        state.data = seedData();
-        save();
-      }
+  let isLoaded = false;
+
+  // Bawaan Fallback: Jika cloud tidak merespon dalam 3 detik, pakai data lokal
+  const fallbackTimeout = setTimeout(() => {
+    if (!isLoaded) {
+      console.warn("Koneksi Firebase lambat/terkunci. Beralih ke data lokal.");
+      state.data = seedData();
       renderTab();
-    });
+    }
+  }, 3000);
+
+  if (dataRef) {
+    dataRef.on(
+      "value",
+      (snapshot) => {
+        isLoaded = true;
+        clearTimeout(fallbackTimeout);
+        const val = snapshot.val();
+        if (val) {
+          state.data = val;
+        } else {
+          state.data = seedData();
+          save();
+        }
+        renderTab();
+      },
+      (error) => {
+        console.error("Firebase Error:", error);
+        isLoaded = true;
+        clearTimeout(fallbackTimeout);
+        showToast("Akses Firebase ditolak/terkunci. Menggunakan data lokal.", "error");
+        state.data = seedData();
+        renderTab();
+      }
+    );
   } else {
+    isLoaded = true;
+    clearTimeout(fallbackTimeout);
     state.data = seedData();
     renderTab();
   }
 }
-
-function save() {
-  if (dataRef && state.data) {
-    dataRef.set(state.data, (error) => {
-      if (error) {
-        showToast("Gagal menyelaraskan data ke cloud", "error");
-      }
-    });
-  }
-}
-
 /* ==========================================================================
    3. APP RENDER
    ========================================================================== */
