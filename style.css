@@ -1352,3 +1352,85 @@ table.fx-table {
 .sidebar:hover .logout-btn {
   width: auto;
 }
+
+/* --- USER PROFILE BADGE (LOGOUT POWER BUTTON) --- */
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px;
+  border-radius: 12px;
+  margin-top: auto;
+  font-size: 12px;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition: all 0.25s ease;
+}
+
+/* Sembunyikan nama user saat sidebar ciut */
+.user-info-text {
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  margin-right: auto;
+}
+
+/* Styling Tombol Logout Bulat Merah */
+.logout-btn {
+  background: #E85D88;
+  color: white;
+  border: none;
+  padding: 0;
+  border-radius: 50%; /* Membuat tombol melingkar persis seperti logo */
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(232, 93, 136, 0.3);
+}
+
+.logout-btn:hover {
+  background: #D6426C;
+  transform: scale(1.05);
+}
+
+.logout-icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Sembunyikan teks "Keluar" saat ciut */
+.logout-text {
+  display: none;
+  white-space: nowrap;
+}
+
+/* --- SAAT SIDEBAR DI-HOVER (DILETAKKAN KURSOR) --- */
+.sidebar:hover .user-profile-badge {
+  justify-content: space-between;
+  padding: 8px 12px;
+}
+
+.sidebar:hover .user-info-text {
+  display: flex;
+}
+
+.sidebar:hover .logout-btn {
+  width: auto;
+  height: 36px;
+  border-radius: 10px; /* Berubah jadi kapsul rapi saat muncul tulisan */
+  padding: 0 12px;
+}
+
+.sidebar:hover .logout-text {
+  display: inline;
+}
