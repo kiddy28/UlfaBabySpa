@@ -1,8 +1,5 @@
 /* ==========================================================================
-   1. CONSTANTS, HELPERS & ICONS
-   ========================================================================== */
-/* ==========================================================================
-   1. CONSTANTS, HELPERS & ICONS
+   1. CONSTANTS, HELPERS & FIREBASE CONFIG
    ========================================================================== */
 const uid = () => Math.random().toString(36).slice(2, 10);
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -10,9 +7,24 @@ const fmtIDR = (n) => "Rp " + Math.round(n || 0).toLocaleString("id-ID");
 const fmtDate = (d) => new Date(d).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" });
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-/* ==========================================================================
-   FIREBASE CONFIGURATION
-   ========================================================================== */
+const CATEGORY_COLORS = ["#E85D88", "#4FA7B2", "#D9A548", "#A87CA0", "#E7A99A"];
+
+const ICONS = {
+  dashboard: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>',
+  receipt: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/></svg>',
+  sparkles: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.7 4.6L18 9l-4.3 1.4L12 15l-1.7-4.6L6 9l4.3-1.4L12 3z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/></svg>',
+  boxes: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l10-5 10 5-10 5-10-5z"/><path d="M2 8v9l10 5 10-5V8"/><path d="M12 13v9"/></svg>',
+  users: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  wallet: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>',
+  staff: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><circle cx="19" cy="11" r="2"/><path d="M22 21v-1a3 3 0 0 0-2-2.83"/></svg>',
+  plus: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  trash: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  alert: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  up: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  down: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>'
+};
+
+// KONFIGURASI FIREBASE REALTIME
 const firebaseConfig = {
   apiKey: "AIzaSyAqUKV4q9MhJUiHbaKBUbHuLLET_G-fyx4",
   authDomain: "ulfa-baby-spa.firebaseapp.com",
@@ -24,13 +36,50 @@ const firebaseConfig = {
   measurementId: "G-CVCJDL869X"
 };
 
-// Inisialisasi Firebase Realtime
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-const dataRef = db.ref("spa_monitor_data");
+if (typeof firebase !== "undefined" && !firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+const db = typeof firebase !== "undefined" ? firebase.database() : null;
+const dataRef = db ? db.ref("spa_monitor_data") : null;
+
+function showToast(msg, type = "info") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  const iconMap = { success: "✓", error: "✕", info: "ℹ" };
+  toast.innerHTML = `<span>${iconMap[type] || "ℹ"}</span> <span>${esc(msg)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.animation = "toastOut 0.3s forwards";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+function paginate(items = [], page = 1, pageSize = 5) {
+  const total = items.length;
+  const totalPages = Math.ceil(total / pageSize) || 1;
+  const currentPage = Math.max(1, Math.min(page, totalPages));
+  const start = (currentPage - 1) * pageSize;
+  const paginatedItems = items.slice(start, start + pageSize);
+
+  const renderControls = (pageKey) => {
+    if (total <= pageSize) return "";
+    return `
+      <div class="pagination-wrap">
+        <span>Menampilkan ${start + 1}-${Math.min(start + pageSize, total)} dari ${total} data</span>
+        <div class="pagination-btns">
+          <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage <= 1 ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage - 1}">‹ Prev</button>
+          <span style="align-self:center;font-weight:600;padding:0 4px;">${currentPage} / ${totalPages}</span>
+          <button class="fx-btn fx-btn-mini fx-btn-ghost" style="border:1px solid var(--line)" ${currentPage >= totalPages ? 'disabled style="opacity:0.5"' : ''} data-page-action="${pageKey}" data-page="${currentPage + 1}">Next ›</button>
+        </div>
+      </div>`;
+  };
+  return { items: paginatedItems, renderControls, currentPage, totalPages };
+}
 
 /* ==========================================================================
-   2. STATE & DATA MANAGEMENT (REALTIME SYNC)
+   2. STATE & DATA MANAGEMENT
    ========================================================================== */
 let state = {
   tab: "ringkasan",
@@ -92,23 +141,26 @@ function seedData() {
   };
 }
 
-// Load data otomatis tersinkron ke semua perangkat
 function load() {
-  dataRef.on("value", (snapshot) => {
-    const val = snapshot.val();
-    if (val) {
-      state.data = val;
-    } else {
-      state.data = seedData();
-      save();
-    }
+  if (dataRef) {
+    dataRef.on("value", (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        state.data = val;
+      } else {
+        state.data = seedData();
+        save();
+      }
+      renderTab();
+    });
+  } else {
+    state.data = seedData();
     renderTab();
-  });
+  }
 }
 
-// Simpan data ke server cloud
 function save() {
-  if (state.data) {
+  if (dataRef && state.data) {
     dataRef.set(state.data, (error) => {
       if (error) {
         showToast("Gagal menyelaraskan data ke cloud", "error");
@@ -129,6 +181,13 @@ function render() {
 function renderTab() {
   const main = document.getElementById("main");
   if (!main) return;
+
+  // JIKA DATA BELUM SELESAI DIMUAT DARI CLOUD, TAMPILKAN INDIKATOR LOADING (MENCEGAH BLANK WHITE SCREEN)
+  if (!state.data) {
+    main.innerHTML = `<div style="text-align:center; padding:60px 20px; font-weight:700; color:var(--inkSoft); font-size:15px;">⏳ Memuat data dari server cloud...</div>`;
+    return;
+  }
+
   const d = state.data;
 
   switch (state.tab) {
@@ -172,10 +231,10 @@ function kpiCard(label, value, iconKey, tint) {
    4. MODULE: RINGKASAN
    ========================================================================== */
 function viewRingkasan(d) {
-  const totalRevenue = d.transactions.reduce((s, t) => s + t.amount, 0);
-  const totalExpense = d.expenses.reduce((s, e) => s + e.amount, 0);
+  const totalRevenue = (d.transactions || []).reduce((s, t) => s + t.amount, 0);
+  const totalExpense = (d.expenses || []).reduce((s, e) => s + e.amount, 0);
   const netProfit = totalRevenue - totalExpense;
-  const lowStock = d.inventory.filter(i => i.stock <= i.minStock);
+  const lowStock = (d.inventory || []).filter(i => i.stock <= i.minStock);
 
   return `
     ${header("Ringkasan Usaha", "Gambaran umum performa Ulfa Baby Spa")}
@@ -183,7 +242,7 @@ function viewRingkasan(d) {
       ${kpiCard("Total Pendapatan", fmtIDR(totalRevenue), "wallet", "var(--sage)")}
       ${kpiCard("Total Pengeluaran", fmtIDR(totalExpense), "down", "var(--blush)")}
       ${kpiCard("Laba Bersih", fmtIDR(netProfit), "up", netProfit >= 0 ? "var(--sage)" : "var(--danger)")}
-      ${kpiCard("Total Booking", d.transactions.length, "receipt", "var(--aqua)")}
+      ${kpiCard("Total Booking", (d.transactions || []).length, "receipt", "var(--aqua)")}
     </div>
     <div class="charts-row">
       <div class="fx-card"><div class="card-title">Tren Pendapatan</div><div id="revenueChart"></div></div>
@@ -205,7 +264,7 @@ function initCharts(d) {
   if (!revWrap || !svcWrap) return;
 
   const map = {};
-  d.transactions.forEach(t => { map[t.date] = (map[t.date] || 0) + t.amount; });
+  (d.transactions || []).forEach(t => { map[t.date] = (map[t.date] || 0) + t.amount; });
   const days = Object.keys(map).sort().slice(-7);
 
   if (days.length === 0) {
@@ -253,8 +312,8 @@ function initCharts(d) {
   }
 
   const svcMap = {};
-  d.transactions.forEach(t => {
-    const svc = d.services.find(s => s.id === t.serviceId);
+  (d.transactions || []).forEach(t => {
+    const svc = (d.services || []).find(s => s.id === t.serviceId);
     const name = svc ? svc.name : "Lainnya";
     svcMap[name] = (svcMap[name] || 0) + 1;
   });
@@ -300,9 +359,9 @@ function viewJadwal(d) {
         </div>
         <div class="alert-schedule-grid">
           ${upcomingTwo.map(s => {
-            const cust = d.customers ? d.customers.find(c => c.id === s.customerId) : null;
-            const svc = d.services ? d.services.find(srv => srv.id === s.serviceId) : null;
-            const stf = d.staff ? d.staff.find(st => st.id === s.staffId) : null;
+            const cust = (d.customers || []).find(c => c.id === s.customerId);
+            const svc = (d.services || []).find(srv => srv.id === s.serviceId);
+            const stf = (d.staff || []).find(st => st.id === s.staffId);
             const payText = s.payMethod === 'DP' ? ` • <strong style="color:#28a745">DP: ${fmtIDR(s.dpAmount)}</strong>` : ` • <strong>(${s.payMethod || 'Cash'})</strong>`;
             return `
               <div class="alert-schedule-card">
@@ -340,9 +399,9 @@ function viewJadwal(d) {
         <tbody>
           ${sorted.length === 0 ? '<tr class="empty-row"><td colspan="7">Belum ada agenda reservasi.</td></tr>' : ''}
           ${sorted.map(s => {
-            const cust = d.customers ? d.customers.find(c => c.id === s.customerId) : null;
-            const svc = d.services ? d.services.find(srv => srv.id === s.serviceId) : null;
-            const stf = d.staff ? d.staff.find(st => st.id === s.staffId) : null;
+            const cust = (d.customers || []).find(c => c.id === s.customerId);
+            const svc = (d.services || []).find(srv => srv.id === s.serviceId);
+            const stf = (d.staff || []).find(st => st.id === s.staffId);
             
             const totalCost = (svc ? svc.price : 0) + (s.transportFee || 0);
             const dp = s.dpAmount || 0;
@@ -387,7 +446,6 @@ function viewJadwal(d) {
       </table>
     </div>
 
-    <!-- POP-UP MODAL RESERVASI DENGAN PILIHAN METODE BAYAR -->
     <div class="modal-overlay" id="sch-modal">
       <div class="modal-container">
         <div class="modal-header">
@@ -408,8 +466,8 @@ function viewJadwal(d) {
           </div>
 
           <div class="modal-form-row">
-            <div class="field"><span class="field-label">Layanan</span><select class="fx-input" id="sch-service"><option value="">Pilih layanan</option>${d.services.map(s => `<option value="${s.id}">${esc(s.name)} — ${fmtIDR(s.price)}</option>`).join("")}</select></div>
-            <div class="field"><span class="field-label">Terapis</span><select class="fx-input" id="sch-staff"><option value="">Pilih terapis</option>${d.staff.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
+            <div class="field"><span class="field-label">Layanan</span><select class="fx-input" id="sch-service"><option value="">Pilih layanan</option>${(d.services || []).map(s => `<option value="${s.id}">${esc(s.name)} — ${fmtIDR(s.price)}</option>`).join("")}</select></div>
+            <div class="field"><span class="field-label">Terapis</span><select class="fx-input" id="sch-staff"><option value="">Pilih terapis</option>${(d.staff || []).map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join("")}</select></div>
           </div>
 
           <div class="modal-form-row">
@@ -479,7 +537,7 @@ function bindJadwal() {
   if (searchInput && dropdown) {
     const renderDropdown = (query = "") => {
       const q = query.toLowerCase().trim();
-      const filtered = state.data.customers.filter(c => 
+      const filtered = (state.data.customers || []).filter(c => 
         c.name.toLowerCase().includes(q) || (c.babyName && c.babyName.toLowerCase().includes(q))
       );
 
@@ -527,7 +585,7 @@ function bindJadwal() {
     if (!customerId) return showToast("Pilih pelanggan dari hasil pencarian!", "error");
     if (!serviceId) return showToast("Pilih Layanan!", "error");
 
-    const svc = state.data.services.find(s => s.id === serviceId);
+    const svc = (state.data.services || []).find(s => s.id === serviceId);
     const totalCost = (svc ? svc.price : 0) + transportFee;
 
     if (!state.data.schedules) state.data.schedules = [];
@@ -548,6 +606,7 @@ function bindJadwal() {
 
     const paidNow = payMethod === "Lunas" ? totalCost : (payMethod === "DP" ? dpAmount : 0);
     if (paidNow > 0) {
+      if (!state.data.transactions) state.data.transactions = [];
       state.data.transactions.unshift({
         id: uid(),
         date: todayISO(),
@@ -571,7 +630,7 @@ function bindJadwal() {
     const sch = state.data.schedules.find(s => s.id === btn.dataset.id);
     if (!sch) return;
 
-    const svc = state.data.services.find(s => s.id === sch.serviceId);
+    const svc = (state.data.services || []).find(s => s.id === sch.serviceId);
     const totalAmount = (svc ? svc.price : 0) + (sch.transportFee || 0);
     const dpPaid = sch.dpAmount || 0;
     const remainingToPay = Math.max(0, totalAmount - dpPaid);
@@ -579,6 +638,7 @@ function bindJadwal() {
     if (confirm(`Tandai perawatan selesai? Sisa pembayaran ${fmtIDR(remainingToPay)} akan otomatis dicatat.`)) {
       sch.status = "Selesai";
       if (remainingToPay > 0) {
+        if (!state.data.transactions) state.data.transactions = [];
         state.data.transactions.unshift({
           id: uid(),
           date: sch.date,
@@ -599,9 +659,9 @@ function bindJadwal() {
     const sch = state.data.schedules.find(s => s.id === btn.dataset.id);
     if (!sch) return;
 
-    const cust = state.data.customers.find(c => c.id === sch.customerId);
-    const svc = state.data.services.find(s => s.id === sch.serviceId);
-    const stf = state.data.staff.find(s => s.id === sch.staffId);
+    const cust = (state.data.customers || []).find(c => c.id === sch.customerId);
+    const svc = (state.data.services || []).find(s => s.id === sch.serviceId);
+    const stf = (state.data.staff || []).find(s => s.id === sch.staffId);
 
     if (!cust || !cust.phone) return showToast("Nomor HP belum terdaftar!", "error");
     let phoneStr = String(cust.phone).replace(/\D/g, "");
@@ -688,7 +748,6 @@ function viewTransaksi(d) {
             const cust = d.customers ? d.customers.find(c => c.id === t.customerId) : null;
             const svc = d.services ? d.services.find(s => s.id === t.serviceId) : null;
             const stf = d.staff ? d.staff.find(s => s.id === t.staffId) : null;
-            const transportFee = t.transportFee || 0;
             const typeBadge = t.type === 'Home Care' 
               ? `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10px;">🏠 Home Care</span>` 
               : `<span class="badge" style="background:#FDECF1; color:var(--sageDark); font-size:10px;">🏢 Studio</span>`;
@@ -779,7 +838,7 @@ function viewLayanan(d) {
           </tr>
         </thead>
         <tbody>
-          ${d.services.map(s => `<tr>
+          ${(d.services || []).map(s => `<tr>
             <td><strong>${esc(s.name)}</strong></td>
             <td>${esc(s.category)}</td>
             <td style="font-weight:600; color:var(--sageDark);">${fmtIDR(s.price)}</td>
@@ -799,7 +858,7 @@ function viewLayanan(d) {
           <span class="field-label">Pilih Pelanggan</span>
           <select class="fx-input" id="mb-customer">
             <option value="">Pilih pelanggan...</option>
-            ${d.customers.map(c => `<option value="${c.id}">${esc(c.name)} (${esc(c.babyName || 'Bayi')})</option>`).join('')}
+            ${(d.customers || []).map(c => `<option value="${c.id}">${esc(c.name)} (${esc(c.babyName || 'Bayi')})</option>`).join('')}
           </select>
         </div>
         <div class="field"><span class="field-label">Nama Paket</span><input class="fx-input" id="mb-name" placeholder="mis. Paket Gold 5x Massage"></div>
@@ -813,7 +872,7 @@ function viewLayanan(d) {
         <div class="pkg-grid">
           ${d.memberships.length === 0 ? '<p style="color:var(--inkSoft); font-size:13px;">Belum ada paket membership terdaftar.</p>' : ''}
           ${d.memberships.map(m => {
-            const cust = d.customers.find(c => c.id === m.customerId);
+            const cust = (d.customers || []).find(c => c.id === m.customerId);
             const remaining = m.totalSessions - m.usedSessions;
             const pct = Math.round((m.usedSessions / m.totalSessions) * 100);
 
@@ -849,6 +908,7 @@ function bindLayanan() {
     const name = document.getElementById("svc-name").value.trim();
     const price = Number(document.getElementById("svc-price").value) || 0;
     if (!name || !price) return showToast("Isi Nama dan Harga!", "error");
+    if (!state.data.services) state.data.services = [];
     state.data.services.push({ id: uid(), name, category: document.getElementById("svc-category").value, price, duration: Number(document.getElementById("svc-duration").value) || 0 });
     save(); showToast("Layanan ditambahkan", "success"); renderTab();
   });
@@ -922,7 +982,7 @@ function viewStok(d) {
           </tr>
         </thead>
         <tbody>
-          ${d.inventory.map(i => `<tr>
+          ${(d.inventory || []).map(i => `<tr>
             <td><strong>${esc(i.name)}</strong></td>
             <td>${i.stock} ${esc(i.unit)}</td>
             <td>${i.minStock} ${esc(i.unit)}</td>
@@ -940,6 +1000,7 @@ function bindStok() {
   document.getElementById("inv-add")?.addEventListener("click", () => {
     const name = document.getElementById("inv-name").value.trim();
     if (!name) return showToast("Isi Nama Barang!", "error");
+    if (!state.data.inventory) state.data.inventory = [];
     state.data.inventory.push({ id: uid(), name, unit: document.getElementById("inv-unit").value.trim() || "pcs", stock: Number(document.getElementById("inv-stock").value) || 0, minStock: Number(document.getElementById("inv-min").value) || 0 });
     save(); showToast("Barang ditambahkan", "success"); renderTab();
   });
@@ -1072,6 +1133,7 @@ function bindPelanggan() {
     const name = document.getElementById("cust-name").value.trim();
     if (!name) return showToast("Isi Nama Ibu!", "error");
 
+    if (!state.data.customers) state.data.customers = [];
     state.data.customers.unshift({
       id: uid(),
       name,
@@ -1107,9 +1169,9 @@ function bindPelanggan() {
 }
 
 function viewKeuangan(d) {
-  const totalRevenue = d.transactions.reduce((s, t) => s + t.amount, 0);
-  const totalExpense = d.expenses.reduce((s, e) => s + e.amount, 0);
-  const pg = paginate(d.expenses, state.expPage, 5);
+  const totalRevenue = (d.transactions || []).reduce((s, t) => s + t.amount, 0);
+  const totalExpense = (d.expenses || []).reduce((s, e) => s + e.amount, 0);
+  const pg = paginate(d.expenses || [], state.expPage, 5);
 
   return `
     ${header("Keuangan", "Pantau pemasukan dan pengeluaran")}
@@ -1158,6 +1220,7 @@ function bindKeuangan() {
   document.getElementById("exp-add")?.addEventListener("click", () => {
     const amount = Number(document.getElementById("exp-amount").value) || 0;
     if (!amount) return showToast("Isi Jumlah pengeluaran!", "error");
+    if (!state.data.expenses) state.data.expenses = [];
     state.data.expenses.unshift({ id: uid(), date: document.getElementById("exp-date").value || todayISO(), category: document.getElementById("exp-category").value, amount, note: document.getElementById("exp-note").value.trim() });
     save(); showToast("Pengeluaran dicatat", "success"); renderTab();
   });
@@ -1195,7 +1258,7 @@ function viewStaf(d) {
           </tr>
         </thead>
         <tbody>
-          ${d.staff.map(s => `<tr>
+          ${(d.staff || []).map(s => `<tr>
             <td><strong>${esc(s.name)}</strong></td>
             <td>${esc(s.role)}</td>
             <td>${esc(s.phone) || "—"}</td>
@@ -1212,6 +1275,7 @@ function bindStaf() {
   document.getElementById("staf-add")?.addEventListener("click", () => {
     const name = document.getElementById("staf-name").value.trim();
     if (!name) return showToast("Isi Nama Staf!", "error");
+    if (!state.data.staff) state.data.staff = [];
     state.data.staff.push({ id: uid(), name, role: document.getElementById("staf-role").value, phone: document.getElementById("staf-phone").value.trim() });
     save(); showToast("Staf ditambahkan", "success"); renderTab();
   });
@@ -1224,7 +1288,7 @@ function bindStaf() {
 }
 
 /* ==========================================================================
-   9. INITIALIZATION
+   9. INITIALIZATION & PRINT RECEIPT
    ========================================================================== */
 load();
 render();
@@ -1248,16 +1312,13 @@ function startRealtimeClock() {
 
 startRealtimeClock();
 
-/* ==========================================================================
-   10. PRINT RECEIPT (FUNGSI STRUK BESERTA KETERANGAN DP / PELUNASAN / CASH)
-   ========================================================================== */
 function printReceipt(txId) {
-  const tx = state.data.transactions.find(t => t.id === txId);
+  const tx = (state.data.transactions || []).find(t => t.id === txId);
   if (!tx) return showToast("Transaksi tidak ditemukan!", "error");
 
-  const cust = state.data.customers.find(c => c.id === tx.customerId);
-  const svc = state.data.services.find(s => s.id === tx.serviceId);
-  const stf = state.data.staff.find(s => s.id === tx.staffId);
+  const cust = (state.data.customers || []).find(c => c.id === tx.customerId);
+  const svc = (state.data.services || []).find(s => s.id === tx.serviceId);
+  const stf = (state.data.staff || []).find(s => s.id === tx.staffId);
 
   const printArea = document.getElementById("print-area");
   if (!printArea) return;
