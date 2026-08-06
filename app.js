@@ -376,24 +376,40 @@ function viewJadwal(d) {
   return `
     ${header("Jadwal & Booking Spa", "Atur janji temu, pembayaran DP, dan reservasi pelanggan")}
     
-    ${upcomingTwo.length > 0 ? `
-      <div class="fx-card alert-schedule-box">
+   ${upcomingTwo.length > 0 ? `
+      <div class="alert-schedule-box">
         <div class="alert-schedule-header">
-          <span>🔔 <strong>PERHATIAN: 2 JADWAL RESERVASI TERDEKAT</strong></span>
+          <span class="alert-schedule-title">🔔 Reservasi Terdekat Hari Ini</span>
+          <span class="alert-schedule-badge">${upcomingTwo.length} Jadwal</span>
         </div>
         <div class="alert-schedule-grid">
           ${upcomingTwo.map(s => {
             const cust = (d.customers || []).find(c => c.id === s.customerId);
             const svc = (d.services || []).find(srv => srv.id === s.serviceId);
             const stf = (d.staff || []).find(st => st.id === s.staffId);
-            const payText = s.payMethod === 'DP' ? ` • <strong style="color:#28a745">DP: ${fmtIDR(s.dpAmount)}</strong>` : ` • <strong>(${s.payMethod || 'Cash'})</strong>`;
+            
+            let payBadge = `<span class="badge-pay badge-cash">💵 Pay at Venue</span>`;
+            if (s.payMethod === 'DP') {
+              payBadge = `<span class="badge-pay badge-dp">💳 DP: ${fmtIDR(s.dpAmount)}</span>`;
+            } else if (s.payMethod === 'Lunas') {
+              payBadge = `<span class="badge-pay badge-lunas">✓ Lunas</span>`;
+            }
+
             return `
               <div class="alert-schedule-card">
-                <div>
-                  <strong style="color:var(--sageDark); font-size:14px;">⏰ ${s.time} WIB (${fmtDate(s.date)})</strong><br>
-                  <span style="font-weight:700; color:var(--ink);">Bunda ${cust ? esc(cust.name) : '-'}</span> 
-                  <small style="color:var(--inkSoft);">(Bayi: ${cust ? esc(cust.babyName || '-') : '-'})</small><br>
-                  <small>💆 ${svc ? esc(svc.name) : '-'} • 👩‍⚕️ ${stf ? esc(stf.name) : '-'}${payText}</small>
+                <div class="sch-card-top">
+                  <div class="sch-time-tag">
+                    ⏰ <strong>${s.time} WIB</strong> <small>(${fmtDate(s.date)})</small>
+                  </div>
+                  ${payBadge}
+                </div>
+                <div class="sch-card-body">
+                  <div class="sch-cust-name">Bunda ${cust ? esc(cust.name) : '-'}</div>
+                  <div class="sch-baby-name">👶 Bayi: ${cust ? esc(cust.babyName || '-') : '-'}</div>
+                  <div class="sch-detail-meta">
+                    <span>💆 ${svc ? esc(svc.name) : '-'}</span>
+                    <span>👩‍⚕️ ${stf ? esc(stf.name) : '-'}</span>
+                  </div>
                 </div>
               </div>
             `;
