@@ -137,38 +137,52 @@ function seedData() {
   };
 }
 
-// Load data instan dari cache lokal, lalu sinkronkan dari Supabase
+// Load data instan + Realtime Cloud Sync Supabase
 async function load() {
-  // 1. Ambil dari cache browser dulu agar aplikasi terbuka 0-detik
+  // 1. Tampilkan dari cache lokal / seedData dulu (0 detik)
   const cached = localStorage.getItem("spa_data");
   if (cached) {
     try { state.data = JSON.parse(cached); } catch(e) {}
   } else {
     state.data = seedData();
   }
-  renderTab(); // Langsung tampilkan UI ke layar
+  renderTab();
 
-  // 2. Ambil data terbaru dari tabel Supabase di cloud
   if (supabaseClient) {
+    // 2. Tarik data terbaru saat ini dari Supabase
     try {
-      const { data, error } = await supabaseClient
+      const { data } = await supabaseClient
         .from('spa_data')
         .select('payload')
         .eq('id', 'main_data')
         .maybeSingle();
 
       if (data && data.payload) {
-        // Jika ada data di cloud, update state dan simpan ke cache lokal
         state.data = data.payload;
         localStorage.setItem("spa_data", JSON.stringify(data.payload));
-        renderTab(); // Refresh UI dengan data cloud terbaru
+        renderTab();
       } else if (!data) {
-        // Jika tabel Supabase masih kosong, upload data awal (seedData)
         save();
       }
     } catch (err) {
-      console.warn("Memakai data lokal karena koneksi cloud offline:", err);
+      console.warn("Memakai data lokal:", err);
     }
+
+    // 3. LISTEN PERUBAHAN REALTIME (Agar Guest Mode / Browser lain ter-update otomatis)
+    supabaseClient
+      .channel('schema-db-changes')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'spa_data', filter: 'id=eq.main_data' },
+        (payload) => {
+          if (payload.new && payload.new.payload) {
+            state.data = payload.new.payload;
+            localStorage.setItem("spa_data", JSON.stringify(payload.new.payload));
+            renderTab(); // Refresh tampilan instan begitu ada data baru masuk
+          }
+        }
+      )
+      .subscribe();
   }
 }
 
