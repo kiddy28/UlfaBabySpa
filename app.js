@@ -242,6 +242,56 @@ async function save() {
 }
 
 /* ==========================================================================
+   FUNGSI EKSPOR, IMPOR & BACKUP
+   ========================================================================== */
+function exportToExcel() {
+  if (!state.data || typeof XLSX === "undefined") {
+    return showToast("Gagal mengekspor data!", "error");
+  }
+  const wb = XLSX.utils.book_new();
+  Object.keys(state.data).forEach(key => {
+    if (Array.isArray(state.data[key])) {
+      const ws = XLSX.utils.json_to_sheet(state.data[key]);
+      XLSX.utils.book_append_sheet(wb, ws, key);
+    }
+  });
+  XLSX.writeFile(wb, `Ulfa_Baby_Spa_Data_${todayISO()}.xlsx`);
+  showToast("Data berhasil diekspor ke Excel!", "success");
+}
+
+function backupData() {
+  if (!state.data) return;
+  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `Backup_UlfaBabySpa_${todayISO()}.json`;
+  a.click();
+  showToast("Backup JSON berhasil diunduh!", "success");
+}
+
+function importDataFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  
+  if (file.name.endsWith(".json")) {
+    reader.onload = (e) => {
+      try {
+        state.data = JSON.parse(e.target.result);
+        save();
+        renderTab();
+        showToast("Data JSON berhasil diimpor!", "success");
+      } catch (err) {
+        showToast("Format file JSON salah!", "error");
+      }
+    };
+    reader.readAsText(file);
+  } else {
+    showToast("Fitur impor file Excel sedang dikembangkan", "info");
+  }
+}
+
+/* ==========================================================================
    3. SISTEM LOGIN & OTORISASI
    ========================================================================== */
 function renderLoginModal() {
@@ -1740,7 +1790,10 @@ function bindStaf() {
 /* ==========================================================================
    10. INITIALIZATION & PRINT RECEIPT
    ========================================================================== */
-initApp();
+document.addEventListener("DOMContentLoaded", () => {
+  initApp();
+  startRealtimeClock();
+});
 
 function startRealtimeClock() {
   const updateClock = () => {
@@ -1758,8 +1811,6 @@ function startRealtimeClock() {
   updateClock();
   setInterval(updateClock, 1000);
 }
-
-startRealtimeClock();
 
 function printReceipt(txId) {
   const tx = (state.data.transactions || []).find(t => t.id === txId);
