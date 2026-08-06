@@ -141,7 +141,7 @@ function seedData() {
   };
 }
 
-/ Load data terpadu real-time dari Firebase Cloud
+// Load data terpadu real-time dari Firebase Cloud
 function load() {
   // 1. Ambil cache sementara agar UI langsung muncul
   const cached = localStorage.getItem("spa_data");
@@ -199,9 +199,8 @@ function renderTab() {
   const main = document.getElementById("main");
   if (!main) return;
 
-  // JIKA DATA BELUM SELESAI DIMUAT DARI CLOUD, TAMPILKAN INDIKATOR LOADING (MENCEGAH BLANK WHITE SCREEN)
   if (!state.data) {
-    main.innerHTML = `<div style="text-align:center; padding:60px 20px; font-weight:700; color:var(--inkSoft); font-size:15px;">⏳ Sabar yakk.. lagi memuat data dari server cloud...</div>`;
+    main.innerHTML = `<div style="text-align:center; padding:60px 20px; font-weight:700; color:var(--inkSoft); font-size:15px;">⏳ Memuat data dari server cloud...</div>`;
     return;
   }
 
@@ -609,14 +608,14 @@ function bindJadwal() {
   const dropdown = document.getElementById("sch-cust-dropdown");
 
   if (searchInput && dropdown) {
-   const renderDropdown = (query = "") => {
+    const renderDropdown = (query = "") => {
       const q = query.toLowerCase().trim();
       const filtered = (state.data.customers || []).filter(c => 
         c.name.toLowerCase().includes(q) || (c.babyName && c.babyName.toLowerCase().includes(q))
       );
 
       if (filtered.length === 0) {
-        dropdown.innerHTML = `<div class="combobox-item empty">Aduh, pelanggan tidak ditemukan 😅</div>`;
+        dropdown.innerHTML = `<div class="combobox-item empty">Pelanggan tidak ditemukan 😅</div>`;
       } else {
         dropdown.innerHTML = filtered.map(c => `
           <div class="combobox-item" data-id="${c.id}" data-name="Bunda ${esc(c.name)} (${esc(c.babyName || 'Bayi')})">
@@ -642,11 +641,10 @@ function bindJadwal() {
       if (item) {
         hiddenInput.value = item.dataset.id;
         searchInput.value = item.dataset.name;
-        dropdown.style.display = "none";
+        dropdown.classList.remove("show");
       }
     });
 
-   // Sembunyikan jika klik di luar
     document.addEventListener("click", (e) => {
       if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
         dropdown.classList.remove("show");
