@@ -24,6 +24,12 @@ const ICONS = {
   down: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>'
 };
 
+// DATABASE AKUN LOKAL
+const USERS = [
+  { username: "Admin", password: "LondoIreng2026", name: "Ulfa (Owner)", role: "owner" },
+  { username: "User", password: "user123", name: "User Spa", role: "User" }
+];
+
 // KONFIGURASI SUPABASE
 const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcW1ubWd3a2lmYmJoamhlcXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5ODE3MTYsImV4cCI6MjEwMTU1NzcxNn0.3n3Yjo-JqZqKMnit4_qQemuvjOE9U7ipq8VOTSxX_9I";
@@ -32,7 +38,6 @@ const supabaseClient = (typeof supabase !== "undefined")
   ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) 
   : null;
 
-// FITUR 5: TOAST DENGAN TOMBOL UNDO (SLIDE/TOAST)
 function showToast(msg, type = "info", undoCallback = null) {
   const container = document.getElementById("toast-container");
   if (!container) return;
@@ -40,11 +45,7 @@ function showToast(msg, type = "info", undoCallback = null) {
   toast.className = `toast toast-${type}`;
   const iconMap = { success: "✓", error: "✕", info: "ℹ" };
   
-  let undoHtml = "";
-  if (undoCallback) {
-    undoHtml = `<button class="toast-undo-btn" id="toast-undo-btn">URUNGKAN</button>`;
-  }
-
+  let undoHtml = undoCallback ? `<button class="toast-undo-btn" id="toast-undo-btn">URUNGKAN</button>` : "";
   toast.innerHTML = `<div style="display:flex;align-items:center;"><span>${iconMap[type] || "ℹ"}</span> <span style="margin-left:6px;">${esc(msg)}</span> ${undoHtml}</div>`;
   container.appendChild(toast);
 
@@ -90,13 +91,14 @@ function paginate(items = [], page = 1, pageSize = 5) {
 let state = {
   tab: "ringkasan",
   data: null,
+  currentUser: JSON.parse(localStorage.getItem("spa_user") || "null"),
   txPage: 1,
   custPage: 1,
   expPage: 1,
   custSearch: "",
   txSearch: "",
-  dashboardPeriod: "7d", // FITUR 2: Filter Periode ('today', '7d', 'thisMonth', 'all')
-  syncStatus: "online"   // FITUR 1: Status Sync ('online', 'syncing', 'offline')
+  dashboardPeriod: "7d",
+  syncStatus: "online"
 };
 
 function setSyncStatus(status) {
@@ -106,13 +108,13 @@ function setSyncStatus(status) {
   
   if (status === "online") {
     badge.className = "sync-badge sync-online";
-    badge.innerHTML = `<span class="sync-dot"></span> Terhubung Cloud`;
+    badge.innerHTML = `<span class="sync-dot"></span> Online`;
   } else if (status === "syncing") {
     badge.className = "sync-badge sync-syncing";
-    badge.innerHTML = `<span class="sync-dot"></span> Menyimpan...`;
+    badge.innerHTML = `<span class="sync-dot"></span> Connecting...`;
   } else {
     badge.className = "sync-badge sync-offline";
-    badge.innerHTML = `<span class="sync-dot"></span> Mode Lokal`;
+    badge.innerHTML = `<span class="sync-dot"></span> Offline`;
   }
 }
 
@@ -172,6 +174,8 @@ async function load() {
   } else {
     state.data = seedData();
   }
+  
+  applyRolePermissions();
   renderTab();
 
   if (supabaseClient) {
@@ -198,18 +202,14 @@ async function load() {
 
     supabaseClient
       .channel('public:spa_data')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'spa_data' },
-        (payload) => {
-          if (payload.new && payload.new.payload) {
-            state.data = payload.new.payload;
-            localStorage.setItem("spa_data", JSON.stringify(payload.new.payload));
-            setSyncStatus("online");
-            renderTab();
-          }
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'spa_data' }, (payload) => {
+        if (payload.new && payload.new.payload) {
+          state.data = payload.new.payload;
+          localStorage.setItem("spa_data", JSON.stringify(payload.new.payload));
+          setSyncStatus("online");
+          renderTab();
         }
-      )
+      })
       .subscribe();
   } else {
     setSyncStatus("offline");
@@ -218,7 +218,6 @@ async function load() {
 
 async function save() {
   if (!state.data) return;
-
   localStorage.setItem("spa_data", JSON.stringify(state.data));
 
   if (supabaseClient) {
@@ -228,25 +227,137 @@ async function save() {
         .from('spa_data')
         .upsert({ id: 'main_data', payload: state.data, updated_at: new Date() });
 
-      if (error) {
-        console.error("Supabase Save Error:", error.message);
-        setSyncStatus("offline");
-      } else {
-        setSyncStatus("online");
-      }
+      if (error) setSyncStatus("offline");
+      else setSyncStatus("online");
     } catch (err) {
-      console.error("Network Error:", err);
       setSyncStatus("offline");
     }
   }
 }
 
 /* ==========================================================================
-   3. APP RENDER & HEADER FITUR 1 (SYNC BADGE)
+   3. SISTEM LOGIN & OTORISASI
+   ========================================================================== */
+function renderLoginModal() {
+  if (state.currentUser) {
+    const existingModal = document.getElementById("login-overlay");
+    if (existingModal) existingModal.remove();
+    return;
+  }
+
+  let modal = document.getElementById("login-overlay");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "login-overlay";
+    modal.className = "login-overlay";
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div class="login-card">
+      <div class="login-brand-icon">👶</div>
+      <h2 class="login-title fx-display">Ulfa Baby Spa</h2>
+      <p class="login-sub">Masuk untuk mengelola sistem spa</p>
+      
+      <form class="login-form" id="login-form">
+        <div class="field">
+          <label class="field-label" for="login-username">Username</label>
+          <input class="fx-input" id="login-username" placeholder="owner / kasir" required autofocus>
+        </div>
+        <div class="field">
+          <label class="field-label" for="login-password">Password</label>
+          <input class="fx-input" type="password" id="login-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="fx-btn fx-btn-submit" style="margin-top:8px;">Masuk ke Aplikasi</button>
+      </form>
+    </div>
+  `;
+
+  document.getElementById("login-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const u = document.getElementById("login-username").value.trim().toLowerCase();
+    const p = document.getElementById("login-password").value;
+
+    const found = USERS.find(user => user.username === u && user.password === p);
+    if (found) {
+      state.currentUser = found;
+      localStorage.setItem("spa_user", JSON.stringify(found));
+      showToast(`Selamat datang, ${found.name}!`, "success");
+      modal.remove();
+      
+      // Jika kasir login di halaman terlarang, kembalikan ke jadwal
+      if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(state.tab)) {
+        window.location.href = "jadwal.html";
+      } else {
+        applyRolePermissions();
+        renderTab();
+      }
+    } else {
+      showToast("Username atau Password salah!", "error");
+    }
+  });
+}
+
+function applyRolePermissions() {
+  if (!state.currentUser) return;
+  const isKasir = state.currentUser.role === "kasir";
+
+  // Sembunyikan menu nav sensitif untuk kasir
+  document.querySelectorAll(".navbtn").forEach(btn => {
+    const href = btn.getAttribute("href");
+    if (isKasir && (href.includes("index.html") || href.includes("keuangan.html") || href.includes("staf.html"))) {
+      btn.style.display = "none";
+    } else {
+      btn.style.display = "flex";
+    }
+  });
+
+  // Tampilkan Profile Badge & Logout
+  let profileBadge = document.getElementById("user-profile-badge");
+  const sidebar = document.querySelector(".sidebar");
+  if (sidebar && !profileBadge) {
+    profileBadge = document.createElement("div");
+    profileBadge.id = "user-profile-badge";
+    profileBadge.className = "user-profile-badge";
+    sidebar.appendChild(profileBadge);
+  }
+
+  if (profileBadge) {
+    profileBadge.innerHTML = `
+      <div style="display:flex;flex-direction:column;overflow:hidden;">
+        <strong style="color:#fff;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;">${esc(state.currentUser.name)}</strong>
+        <span style="color:var(--blush);font-size:10px;text-transform:uppercase;">${esc(state.currentUser.role)}</span>
+      </div>
+      <button class="logout-btn" id="logout-btn">Keluar</button>
+    `;
+
+    document.getElementById("logout-btn")?.addEventListener("click", () => {
+      localStorage.removeItem("spa_user");
+      state.currentUser = null;
+      showToast("Anda telah keluar", "info");
+      renderLoginModal();
+    });
+  }
+}
+
+/* ==========================================================================
+   4. APP RENDER & PROTEKSI HALAMAN
    ========================================================================== */
 function render() {
   const page = document.body.getAttribute("data-page") || "ringkasan";
   state.tab = page;
+
+  if (!state.currentUser) {
+    renderLoginModal();
+    return;
+  }
+
+  // Proteksi Halaman Kasir
+  if (state.currentUser.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(page)) {
+    window.location.href = "jadwal.html";
+    return;
+  }
+
   renderTab();
 }
 
@@ -254,8 +365,13 @@ function renderTab() {
   const main = document.getElementById("main");
   if (!main) return;
 
+  if (!state.currentUser) {
+    renderLoginModal();
+    return;
+  }
+
   if (!state.data) {
-    main.innerHTML = `<div style="text-align:center; padding:60px 20px; font-weight:700; color:var(--inkSoft); font-size:15px;">⏳ Memuat data dari server cloud...</div>`;
+    main.innerHTML = `<div style="text-align:center; padding:60px 20px; font-weight:700; color:var(--inkSoft); font-size:15px;">⏳ Memuat data...</div>`;
     return;
   }
 
@@ -274,7 +390,6 @@ function renderTab() {
   }
 }
 
-// FITUR 1: Header Tambahan Cloud Sync Badge
 function header(title, sub) {
   const syncClass = state.syncStatus === 'online' ? 'sync-online' : (state.syncStatus === 'syncing' ? 'sync-syncing' : 'sync-offline');
   const syncLabel = state.syncStatus === 'online' ? 'Terhubung Cloud' : (state.syncStatus === 'syncing' ? 'Menyimpan...' : 'Mode Lokal');
@@ -308,7 +423,7 @@ function kpiCard(label, value, iconKey, tint) {
 }
 
 /* ==========================================================================
-   4. MODULE: RINGKASAN (FITUR 2 & 3: FILTER PERIODE & INTERACTIVE TOOLTIP SVG)
+   5. MODULE: RINGKASAN
    ========================================================================== */
 function filterDataByPeriod(txList = [], expList = [], period = "7d") {
   const now = new Date();
@@ -322,7 +437,7 @@ function filterDataByPeriod(txList = [], expList = [], period = "7d") {
         return diffDays >= 0 && diffDays <= 7;
       }
       if (period === "thisMonth") return t.date.slice(0, 7) === todayStr.slice(0, 7);
-      return true; // 'all'
+      return true;
     }),
     exp: expList.filter(e => {
       if (period === "today") return e.date === todayStr;
@@ -331,14 +446,13 @@ function filterDataByPeriod(txList = [], expList = [], period = "7d") {
         return diffDays >= 0 && diffDays <= 7;
       }
       if (period === "thisMonth") return e.date.slice(0, 7) === todayStr.slice(0, 7);
-      return true; // 'all'
+      return true;
     })
   };
 }
 
 function viewRingkasan(d) {
   const filtered = filterDataByPeriod(d.transactions || [], d.expenses || [], state.dashboardPeriod);
-  
   const totalRevenue = filtered.tx.reduce((s, t) => s + t.amount, 0);
   const totalExpense = filtered.exp.reduce((s, e) => s + e.amount, 0);
   const netProfit = totalRevenue - totalExpense;
@@ -347,7 +461,6 @@ function viewRingkasan(d) {
   return `
     ${header("Ringkasan Usaha", "Gambaran umum performa Ulfa Baby Spa")}
     
-    <!-- FITUR 2: Tombol Filter Periode -->
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
       <h3 style="margin:0; font-size:15px; font-weight:700; color:var(--ink);">📊 Performa Keuangan</h3>
       <div class="period-filter-group">
@@ -389,14 +502,12 @@ function bindRingkasan() {
   });
 }
 
-// FITUR 3: SVG Interactive Tooltip implementation
 function initCharts(d) {
   const revWrap = document.getElementById("revenueChart");
   const svcWrap = document.getElementById("servicesChart");
   if (!revWrap || !svcWrap) return;
 
   const filtered = filterDataByPeriod(d.transactions || [], [], state.dashboardPeriod);
-
   const map = {};
   filtered.tx.forEach(t => { map[t.date] = (map[t.date] || 0) + t.amount; });
   const days = Object.keys(map).sort();
@@ -442,13 +553,10 @@ function initCharts(d) {
       </svg>
     `;
 
-    // Interaktivitas Tooltip
     const tooltip = document.getElementById("chart-tooltip");
     revWrap.querySelectorAll(".chart-node").forEach(node => {
       node.addEventListener("mouseenter", (e) => {
-        const val = node.dataset.val;
-        const date = node.dataset.date;
-        tooltip.innerHTML = `<div>${date}</div><div style="color:#E85D88;">${val}</div>`;
+        tooltip.innerHTML = `<div>${node.dataset.date}</div><div style="color:#E85D88;">${node.dataset.val}</div>`;
         tooltip.classList.add("show");
       });
       node.addEventListener("mousemove", (e) => {
@@ -492,7 +600,7 @@ function initCharts(d) {
 }
 
 /* ==========================================================================
-   5. MODULE: JADWAL & BOOKING
+   6. MODULE: JADWAL & BOOKING
    ========================================================================== */
 function viewJadwal(d) {
   if (!d.schedules) d.schedules = [];
@@ -884,7 +992,6 @@ function bindJadwal() {
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
   }));
 
-  // FITUR 5: Hapus dengan Slide/Toast + Undo
   document.querySelectorAll('[data-action="del-sch"]').forEach(btn => btn.addEventListener("click", () => {
     const id = btn.dataset.id;
     const idx = state.data.schedules.findIndex(s => s.id === id);
@@ -905,7 +1012,7 @@ function bindJadwal() {
 }
 
 /* ==========================================================================
-   6. MODULE: TRANSAKSI
+   7. MODULE: TRANSAKSI
    ========================================================================== */
 function viewTransaksi(d) {
   if (!d.transactions) d.transactions = [];
@@ -999,7 +1106,6 @@ function bindTransaksi() {
     renderTab();
   });
 
-  // FITUR 5: Hapus Transaksi dengan Toast Undo
   document.querySelectorAll('[data-action="del-tx"]').forEach(btn => btn.addEventListener("click", () => {
     const id = btn.dataset.id;
     const idx = state.data.transactions.findIndex(t => t.id === id);
@@ -1038,7 +1144,7 @@ function bindTransaksi() {
 }
 
 /* ==========================================================================
-   7. MODULE: LAYANAN & MEMBERSHIP
+   8. MODULE: LAYANAN & MEMBERSHIP
    ========================================================================== */
 function viewLayanan(d) {
   if (!d.memberships) d.memberships = [];
@@ -1142,7 +1248,6 @@ function bindLayanan() {
     save(); showToast("Layanan ditambahkan", "success"); renderTab();
   });
 
-  // FITUR 5: Hapus Service dengan Toast Undo
   document.querySelectorAll('[data-action="del-svc"]').forEach(btn => btn.addEventListener("click", () => {
     const id = btn.dataset.id;
     const idx = state.data.services.findIndex(s => s.id === id);
@@ -1210,7 +1315,7 @@ function bindLayanan() {
 }
 
 /* ==========================================================================
-   8. MODULE: STOK, PELANGGAN, KEUANGAN & STAF (FITUR 4: ENHANCED PELANGGAN)
+   9. MODULE: STOK, PELANGGAN, KEUANGAN & STAF
    ========================================================================== */
 function viewStok(d) {
   return `
@@ -1305,7 +1410,6 @@ function getCustomerBookingCount(customerId, data) {
   return txCount + schCount;
 }
 
-// FITUR 4: MENU PELANGGAN ENHANCEMENTS (Filter Pencarian & Birthday Highlights)
 function viewPelanggan(d) {
   const currentMonth = new Date().getMonth() + 1;
   const birthdayCustomers = (d.customers || []).filter(c => c.dob && (new Date(c.dob).getMonth() + 1 === currentMonth));
@@ -1447,7 +1551,6 @@ function bindPelanggan() {
     save(); showToast("Pelanggan berhasil ditambahkan", "success"); hideModal(); renderTab();
   });
 
-  // FITUR 5: Hapus Customer dengan Toast Undo
   document.querySelectorAll('[data-action="del-cust"]').forEach(btn => btn.addEventListener("click", () => {
     const id = btn.dataset.id;
     const idx = state.data.customers.findIndex(c => c.id === id);
@@ -1539,7 +1642,6 @@ function bindKeuangan() {
     save(); showToast("Pengeluaran dicatat", "success"); renderTab();
   });
 
-  // FITUR 5: Hapus Pengeluaran dengan Toast Undo
   document.querySelectorAll('[data-action="del-exp"]').forEach(btn => btn.addEventListener("click", () => {
     const id = btn.dataset.id;
     const idx = state.data.expenses.findIndex(e => e.id === id);
@@ -1607,7 +1709,6 @@ function bindStaf() {
     save(); showToast("Staf ditambahkan", "success"); renderTab();
   });
 
-  // FITUR 5: Hapus Staf dengan Toast Undo
   document.querySelectorAll('[data-action="del-staf"]').forEach(btn => btn.addEventListener("click", () => {
     const id = btn.dataset.id;
     const idx = state.data.staff.findIndex(s => s.id === id);
@@ -1628,7 +1729,7 @@ function bindStaf() {
 }
 
 /* ==========================================================================
-   9. INITIALIZATION & PRINT RECEIPT
+   10. INITIALIZATION & PRINT RECEIPT
    ========================================================================== */
 load();
 render();
