@@ -457,7 +457,7 @@ function renderTab() {
 
 function header(title, sub) {
   const syncClass = state.syncStatus === 'online' ? 'sync-online' : (state.syncStatus === 'syncing' ? 'sync-syncing' : 'sync-offline');
-  const syncLabel = state.syncStatus === 'online' ? 'Terhubung Cloud' : (state.syncStatus === 'syncing' ? 'Menyimpan...' : 'Mode Lokal');
+  const syncLabel = state.syncStatus === 'online' ? 'Online' : (state.syncStatus === 'syncing' ? 'Connecting' : 'Offline');
 
   return `
     <div class="section-header">
@@ -687,7 +687,7 @@ function viewJadwal(d) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   return `
-    ${header("Jadwal & Booking Spa", "Atur janji temu, pembayaran DP, dan reservasi pelanggan")}
+    ${header("Jadwal & Booking Spa", "Atur janji temu, pembayaran, dan reservasi pelanggan")}
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
       <!-- Quick Filter Status -->
@@ -1039,7 +1039,7 @@ function viewTransaksi(d) {
   const pg = paginate(sorted, state.txPage || 1, 6);
 
   return `
-    ${header("Riwayat Transaksi", "Seluruh transaksi pencatatan DP & Pelunasan")}
+    ${header("Riwayat Transaksi", "Seluruh transaksi tercatat disini")}
     
     <div class="kpi-grid" style="margin-bottom:16px;">
       ${kpiCard("Total Omset Transaksi", fmtIDR(totalRevenue), "wallet", "var(--sage)")}
@@ -1320,70 +1320,182 @@ function bindLayanan() {
 /* ==========================================================================
    9. MODULE: STOK, PELANGGAN, KEUANGAN & STAF
    ========================================================================== */
+/* ==========================================================================
+   MODULE: STOK (DENGAN FITUR TAMBAH / KURANGI / EDIT)
+   ========================================================================== */
 function viewStok(d) {
   return `
-    ${header("Stok Bahan & Perlengkapan", "Pantau bahan habis pakai agar tidak kehabisan")}
+    ${header("Stok Bahan & Perlengkapan", "Pantau dan sesuaikan jumlah bahan habis pakai secara praktis")}
     <div class="fx-card">
+      <div class="card-title">➕ Tambah Barang Baru</div>
       <div class="form-grid">
         <div class="field"><span class="field-label">Nama barang</span><input class="fx-input" id="inv-name" placeholder="mis. Minyak Pijat"></div>
-        <div class="field"><span class="field-label">Satuan</span><input class="fx-input" id="inv-unit" placeholder="botol"></div>
-        <div class="field"><span class="field-label">Stok saat ini</span><input class="fx-input" type="number" id="inv-stock" placeholder="10"></div>
-        <div class="field"><span class="field-label">Batas minimum</span><input class="fx-input" type="number" id="inv-min" placeholder="1"></div>
-        <button class="fx-btn" id="inv-add">${ICONS.plus} Tambah</button>
+        <div class="field"><span class="field-label">Satuan</span><input class="fx-input" id="inv-unit" placeholder="botol / pcs / meter"></div>
+        <div class="field"><span class="field-label">Stok awal</span><input class="fx-input" type="number" id="inv-stock" placeholder="10"></div>
+        <div class="field"><span class="field-label">Batas minimum</span><input class="fx-input" type="number" id="inv-min" placeholder="2"></div>
+        <button class="fx-btn" id="inv-add" style="margin-top:auto;">${ICONS.plus} Tambah</button>
       </div>
     </div>
+
     <div class="fx-card">
       <table class="fx-table">
         <thead>
           <tr>
-            <th style="width: 30%;">BARANG</th>
-            <th style="width: 20%;">STOK</th>
-            <th style="width: 20%;">BATAS MINIMUM</th>
-            <th style="width: 20%;">STATUS</th>
-            <th style="width: 10%; text-align: right;">AKSI</th>
+            <th style="width: 25%;">BARANG</th>
+            <th style="width: 20%;">STOK SAAT INI</th>
+            <th style="width: 15%;">BATAS MIN</th>
+            <th style="width: 15%;">STATUS</th>
+            <th style="width: 25%; text-align: right;">SESUAIKAN STOK / AKSI</th>
           </tr>
         </thead>
         <tbody>
+          ${(!d.inventory || d.inventory.length === 0) ? '<tr class="empty-row"><td colspan="5">Belum ada data barang di inventaris.</td></tr>' : ''}
           ${(d.inventory || []).map(i => `<tr>
             <td><strong>${esc(i.name)}</strong></td>
-            <td>${i.stock} ${esc(i.unit)}</td>
+            <td>
+              <span style="font-size:15px; font-weight:700; color:var(--ink);">${i.stock}</span> 
+              <small style="color:var(--inkSoft);">${esc(i.unit)}</small>
+            </td>
             <td>${i.minStock} ${esc(i.unit)}</td>
-            <td>${i.stock <= i.minStock ? '<span class="badge badge-low">Menipis</span>' : '<span class="badge badge-ok">Aman</span>'}</td>
+            <td>${i.stock <= i.minStock ? '<span class="badge badge-low">⚠️ Menipis</span>' : '<span class="badge badge-ok">Aman</span>'}</td>
             <td style="text-align: right;">
-              <button class="fx-btn-ghost" data-action="del-inv" data-id="${i.id}">${ICONS.trash}</button>
+              <div class="action-cell-group" style="justify-content: flex-end; gap: 4px;">
+                <button class="fx-btn fx-btn-mini" data-action="adjust-stock" data-id="${i.id}" data-amount="-1" style="background:#dc3545; color:white; font-weight:bold; width:28px;" title="Kurangi 1">-</button>
+                <button class="fx-btn fx-btn-mini" data-action="adjust-stock" data-id="${i.id}" data-amount="1" style="background:#28a745; color:white; font-weight:bold; width:28px;" title="Tambah 1">+</button>
+                <button class="fx-btn fx-btn-mini" data-action="edit-inv" data-id="${i.id}" style="background:var(--sage); color:white; margin-left:4px;">✏️ Edit</button>
+                <button class="fx-btn-ghost" data-action="del-inv" data-id="${i.id}">${ICONS.trash}</button>
+              </div>
             </td>
           </tr>`).join("")}
         </tbody>
       </table>
-    </div>`;
+    </div>
+
+    <!-- POP-UP MODAL EDIT STOK -->
+    <div class="modal-overlay" id="edit-inv-modal">
+      <div class="modal-container" style="max-width:400px;">
+        <div class="modal-header">
+          <h3 class="modal-title">✏️ Edit Data Barang</h3>
+          <button class="modal-close-btn" id="close-edit-inv-modal">✕</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="edit-inv-id">
+          <div class="field"><span class="field-label">Nama Barang</span><input class="fx-input" id="edit-inv-name"></div>
+          <div class="field"><span class="field-label">Satuan</span><input class="fx-input" id="edit-inv-unit"></div>
+          <div class="modal-form-row">
+            <div class="field"><span class="field-label">Jumlah Stok</span><input class="fx-input" type="number" id="edit-inv-stock"></div>
+            <div class="field"><span class="field-label">Batas Minimum</span><input class="fx-input" type="number" id="edit-inv-min"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="fx-btn fx-btn-submit" id="save-edit-inv-btn">Simpan Perubahan</button>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function bindStok() {
+  // 1. Tambah Barang Baru
   document.getElementById("inv-add")?.addEventListener("click", () => {
     const name = document.getElementById("inv-name").value.trim();
     if (!name) return showToast("Isi Nama Barang!", "error");
     if (!state.data.inventory) state.data.inventory = [];
-    state.data.inventory.push({ id: uid(), name, unit: document.getElementById("inv-unit").value.trim() || "pcs", stock: Number(document.getElementById("inv-stock").value) || 0, minStock: Number(document.getElementById("inv-min").value) || 0 });
-    save(); showToast("Barang ditambahkan", "success"); renderTab();
+
+    state.data.inventory.push({
+      id: uid(),
+      name,
+      unit: document.getElementById("inv-unit").value.trim() || "pcs",
+      stock: Number(document.getElementById("inv-stock").value) || 0,
+      minStock: Number(document.getElementById("inv-min").value) || 0
+    });
+
+    save();
+    showToast("Barang berhasil ditambahkan", "success");
+    renderTab();
   });
 
-  document.querySelectorAll('[data-action="del-inv"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.inventory.findIndex(i => i.id === id);
-    if (idx === -1) return;
+  // 2. Cepat Tambah / Kurangi Stok (+1 / -1)
+  document.querySelectorAll('[data-action="adjust-stock"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const amount = Number(btn.dataset.amount);
+      const item = state.data.inventory.find(i => i.id === id);
 
-    const deletedItem = state.data.inventory[idx];
-    state.data.inventory.splice(idx, 1);
-    save();
-    renderTab();
+      if (item) {
+        if (item.stock + amount < 0) {
+          return showToast("Stok tidak bisa kurang dari 0!", "error");
+        }
+        item.stock += amount;
+        save();
+        renderTab();
+      }
+    });
+  });
 
-    showToast("Barang dihapus", "info", () => {
-      state.data.inventory.splice(idx, 0, deletedItem);
+  // 3. Edit Detail Barang via Modal
+  const editModal = document.getElementById("edit-inv-modal");
+  const closeEditBtn = document.getElementById("close-edit-inv-modal");
+
+  document.querySelectorAll('[data-action="edit-inv"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const item = state.data.inventory.find(i => i.id === btn.dataset.id);
+      if (!item) return;
+
+      document.getElementById("edit-inv-id").value = item.id;
+      document.getElementById("edit-inv-name").value = item.name;
+      document.getElementById("edit-inv-unit").value = item.unit;
+      document.getElementById("edit-inv-stock").value = item.stock;
+      document.getElementById("edit-inv-min").value = item.minStock;
+
+      editModal?.classList.add("active");
+      document.body.classList.add("modal-open");
+    });
+  });
+
+  closeEditBtn?.addEventListener("click", () => {
+    editModal?.classList.remove("active");
+    document.body.classList.remove("modal-open");
+  });
+
+  document.getElementById("save-edit-inv-btn")?.addEventListener("click", () => {
+    const id = document.getElementById("edit-inv-id").value;
+    const item = state.data.inventory.find(i => i.id === id);
+
+    if (item) {
+      item.name = document.getElementById("edit-inv-name").value.trim() || item.name;
+      item.unit = document.getElementById("edit-inv-unit").value.trim() || item.unit;
+      item.stock = Number(document.getElementById("edit-inv-stock").value) || 0;
+      item.minStock = Number(document.getElementById("edit-inv-min").value) || 0;
+
+      save();
+      showToast("Data barang berhasil diperbarui!", "success");
+      editModal?.classList.remove("active");
+      document.body.classList.remove("modal-open");
+      renderTab();
+    }
+  });
+
+  // 4. Hapus Barang
+  document.querySelectorAll('[data-action="del-inv"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const idx = state.data.inventory.findIndex(i => i.id === id);
+      if (idx === -1) return;
+
+      const deletedItem = state.data.inventory[idx];
+      state.data.inventory.splice(idx, 1);
       save();
       renderTab();
-      showToast("Barang dikembalikan", "success");
+
+      showToast("Barang dihapus", "info", () => {
+        state.data.inventory.splice(idx, 0, deletedItem);
+        save();
+        renderTab();
+        showToast("Barang dikembalikan", "success");
+      });
     });
-  }));
+  });
 }
 
 function calcAge(birthDateStr) {
