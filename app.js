@@ -665,125 +665,141 @@ function initCharts(d) {
 }
 
 /* ==========================================================================
-   6. MODULE: JADWAL & BOOKING
+   6. MODULE: JADWAL & BOOKING (DENGAN KALENDER & QUICK FILTER)
    ========================================================================== */
+if (!state.schFilter) state.schFilter = "Semua";
+if (!state.schView) state.schView = "table"; // 'table' atau 'calendar'
+
 function viewJadwal(d) {
   if (!d.schedules) d.schedules = [];
-  const sorted = [...d.schedules].sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
-  const upcomingTwo = sorted.filter(s => s.status === "Akan Datang").slice(0, 2);
+  
+  // Filter Status
+  let list = [...d.schedules];
+  if (state.schFilter !== "Semua") {
+    list = list.filter(s => s.status === state.schFilter);
+  }
+  const sorted = list.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
+
+  // Kalender Data (Bulan Ini)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   return `
     ${header("Jadwal & Booking Spa", "Atur janji temu, pembayaran DP, dan reservasi pelanggan")}
     
-   ${upcomingTwo.length > 0 ? `
-      <div class="alert-schedule-box">
-        <div class="alert-schedule-header">
-          <span class="alert-schedule-title">🔔 Reservasi Terdekat Hari Ini</span>
-          <span class="alert-schedule-badge">${upcomingTwo.length} Jadwal</span>
-        </div>
-        <div class="alert-schedule-grid">
-          ${upcomingTwo.map(s => {
-            const cust = (d.customers || []).find(c => c.id === s.customerId);
-            const svc = (d.services || []).find(srv => srv.id === s.serviceId);
-            const stf = (d.staff || []).find(st => st.id === s.staffId);
-            
-            let payBadge = `<span class="badge-pay badge-cash">💵 Pay at Venue</span>`;
-            if (s.payMethod === 'DP') {
-              payBadge = `<span class="badge-pay badge-dp">💳 DP: ${fmtIDR(s.dpAmount)}</span>`;
-            } else if (s.payMethod === 'Lunas') {
-              payBadge = `<span class="badge-pay badge-lunas">✓ Lunas</span>`;
-            }
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+      <!-- Quick Filter Status -->
+      <div class="status-filter-group">
+        <button class="status-btn ${state.schFilter === 'Semua' ? 'active' : ''}" data-sch-filter="Semua">Semua</button>
+        <button class="status-btn ${state.schFilter === 'Akan Datang' ? 'active' : ''}" data-sch-filter="Akan Datang">Akan Datang</button>
+        <button class="status-btn ${state.schFilter === 'Selesai' ? 'active' : ''}" data-sch-filter="Selesai">Selesai</button>
+      </div>
+
+      <!-- Toggle View & Tambah -->
+      <div style="display:flex; gap:8px;">
+        <button class="fx-btn fx-btn-ghost" id="toggle-sch-view" style="border:1px solid var(--line)">
+          ${state.schView === 'table' ? '📅 Tampilan Kalender' : '📋 Tampilan Tabel'}
+        </button>
+        <button class="fx-btn" id="open-sch-modal">${ICONS.plus} Tambah Reservasi Baru</button>
+      </div>
+    </div>
+
+    ${state.schView === 'calendar' ? `
+      <!-- CALENDAR VIEW -->
+      <div class="fx-card">
+        <div class="calendar-grid">
+          <div class="calendar-day-header">Min</div><div class="calendar-day-header">Sen</div>
+          <div class="calendar-day-header">Sel</div><div class="calendar-day-header">Rab</div>
+          <div class="calendar-day-header">Kam</div><div class="calendar-day-header">Jum</div>
+          <div class="calendar-day-header">Sab</div>
+
+          ${Array.from({ length: daysInMonth }).map((_, i) => {
+            const dayNum = i + 1;
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+            const isToday = dateStr === todayISO();
+            const dayEvents = sorted.filter(s => s.date === dateStr);
 
             return `
-              <div class="alert-schedule-card">
-                <div class="sch-card-top">
-                  <div class="sch-time-tag">
-                    ⏰ <strong>${s.time} WIB</strong> <small>(${fmtDate(s.date)})</small>
-                  </div>
-                  ${payBadge}
-                </div>
-                <div class="sch-card-body">
-                  <div class="sch-cust-name">Bunda ${cust ? esc(cust.name) : '-'}</div>
-                  <div class="sch-baby-name">👶 Bayi: ${cust ? esc(cust.babyName || '-') : '-'}</div>
-                  <div class="sch-detail-meta">
-                    <span>💆 ${svc ? esc(svc.name) : '-'}</span>
-                    <span>👩‍⚕️ ${stf ? esc(stf.name) : '-'}</span>
-                  </div>
-                </div>
+              <div class="calendar-day-cell ${isToday ? 'today' : ''}">
+                <span class="calendar-day-num">${dayNum}</span>
+                ${dayEvents.map(s => {
+                  const cust = (d.customers || []).find(c => c.id === s.customerId);
+                  return `<div class="calendar-event-item ${s.status === 'Selesai' ? 'completed' : ''}" title="${s.time} - Bunda ${cust ? esc(cust.name) : ''}">
+                    ${s.time} ${cust ? esc(cust.name) : ''}
+                  </div>`;
+                }).join('')}
               </div>
             `;
           }).join('')}
         </div>
       </div>
-    ` : ''}
+    ` : `
+      <!-- TABLE VIEW -->
+      <div class="fx-card">
+        <table class="fx-table">
+          <thead>
+            <tr>
+              <th style="width: 14%;">WAKTU & TANGGAL</th>
+              <th style="width: 18%;">PELANGGAN</th>
+              <th style="width: 20%;">LAYANAN & TIPE</th>
+              <th style="width: 12%;">TERAPIS</th>
+              <th style="width: 14%;">METODE BAYAR</th>
+              <th style="width: 10%;">STATUS</th>
+              <th style="width: 12%; text-align: right;">AKSI</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${sorted.length === 0 ? '<tr class="empty-row"><td colspan="7">Tidak ada agenda reservasi.</td></tr>' : ''}
+            ${sorted.map(s => {
+              const cust = (d.customers || []).find(c => c.id === s.customerId);
+              const svc = (d.services || []).find(srv => srv.id === s.serviceId);
+              const stf = (d.staff || []).find(st => st.id === s.staffId);
+              
+              const totalCost = (svc ? svc.price : 0) + (s.transportFee || 0);
+              const dp = s.dpAmount || 0;
+              const remaining = totalCost - dp;
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-      <h3 style="margin:0; font-size:16px; font-weight:700; color:var(--ink);">📅 Agenda Booking</h3>
-      <button class="fx-btn" id="open-sch-modal">${ICONS.plus} Tambah Reservasi Baru</button>
-    </div>
+              let paymentBadge = `<span class="badge" style="background:#FFF3CD; color:#856404; font-size:10.5px;">Bayar di Tempat</span>`;
+              if (s.payMethod === "DP") {
+                paymentBadge = `<span class="badge" style="background:#D1ECF1; color:#0C5460; font-size:10.5px;">DP: ${fmtIDR(dp)}<br><small>Sisa: ${fmtIDR(remaining)}</small></span>`;
+              } else if (s.payMethod === "Lunas") {
+                paymentBadge = `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10.5px;">✓ Lunas Awalan</span>`;
+              }
 
-    <div class="fx-card">
-      <table class="fx-table">
-        <thead>
-          <tr>
-            <th style="width: 14%;">WAKTU & TANGGAL</th>
-            <th style="width: 18%;">PELANGGAN</th>
-            <th style="width: 20%;">LAYANAN & TIPE</th>
-            <th style="width: 12%;">TERAPIS</th>
-            <th style="width: 14%;">METODE BAYAR</th>
-            <th style="width: 10%;">STATUS</th>
-            <th style="width: 12%; text-align: right;">AKSI</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sorted.length === 0 ? '<tr class="empty-row"><td colspan="7">Belum ada agenda reservasi.</td></tr>' : ''}
-          ${sorted.map(s => {
-            const cust = (d.customers || []).find(c => c.id === s.customerId);
-            const svc = (d.services || []).find(srv => srv.id === s.serviceId);
-            const stf = (d.staff || []).find(st => st.id === s.staffId);
-            
-            const totalCost = (svc ? svc.price : 0) + (s.transportFee || 0);
-            const dp = s.dpAmount || 0;
-            const remaining = totalCost - dp;
+              let statusBadge = `<span class="badge badge-ok">${s.status}</span>`;
+              if (s.status === "Selesai") statusBadge = `<span class="badge" style="background:#E2F0D9; color:#385723;">✓ Selesai</span>`;
 
-            let paymentBadge = `<span class="badge" style="background:#FFF3CD; color:#856404; font-size:10.5px;">Bayar di Tempat</span>`;
-            if (s.payMethod === "DP") {
-              paymentBadge = `<span class="badge" style="background:#D1ECF1; color:#0C5460; font-size:10.5px;">DP: ${fmtIDR(dp)}<br><small>Sisa: ${fmtIDR(remaining)}</small></span>`;
-            } else if (s.payMethod === "Lunas") {
-              paymentBadge = `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10.5px;">✓ Lunas Awalan</span>`;
-            }
+              const typeBadge = s.type === 'Home Care' 
+                ? `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10px;">🏠 Home Care</span>` 
+                : `<span class="badge" style="background:#FDECF1; color:var(--sageDark); font-size:10px;">🏢 Studio</span>`;
 
-            let statusBadge = `<span class="badge badge-ok">${s.status}</span>`;
-            if (s.status === "Selesai") statusBadge = `<span class="badge" style="background:#E2F0D9; color:#385723;">✓ Selesai</span>`;
-
-            const typeBadge = s.type === 'Home Care' 
-              ? `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10px;">🏠 Home Care</span>` 
-              : `<span class="badge" style="background:#FDECF1; color:var(--sageDark); font-size:10px;">🏢 Studio</span>`;
-
-            return `<tr>
-              <td>
-                <strong style="color:var(--sageDark); font-size:13.5px;">⏰ ${s.time} WIB</strong><br>
-                <small style="color:var(--inkSoft)">${fmtDate(s.date)}</small>
-              </td>
-              <td><strong>Bunda ${cust ? esc(cust.name) : "—"}</strong><br><small style="color:var(--inkSoft)">👶 ${cust ? esc(cust.babyName || '-') : '-'}</small></td>
-              <td>${svc ? esc(svc.name) : "—"}<br>${typeBadge}</td>
-              <td>${stf ? esc(stf.name) : "—"}</td>
-              <td>${paymentBadge}</td>
-              <td>${statusBadge}</td>
-              <td style="text-align: right;">
-                <div class="action-cell-group">
-                  ${s.status === 'Akan Datang' ? `
-                    <button class="fx-btn fx-btn-mini" data-action="complete-sch" data-id="${s.id}" style="background:#28a745; color:white;">✓ Selesai</button>
-                  ` : ''}
-                  <button class="fx-btn fx-btn-mini" data-action="wa-sch" data-id="${s.id}" style="background:#25D366; color:white;">💬 WA</button>
-                  <button class="fx-btn-ghost" data-action="del-sch" data-id="${s.id}">${ICONS.trash}</button>
-                </div>
-              </td>
-            </tr>`;
-          }).join("")}
-        </tbody>
-      </table>
-    </div>
+              return `<tr>
+                <td>
+                  <strong style="color:var(--sageDark); font-size:13.5px;">⏰ ${s.time} WIB</strong><br>
+                  <small style="color:var(--inkSoft)">${fmtDate(s.date)}</small>
+                </td>
+                <td><strong>Bunda ${cust ? esc(cust.name) : "—"}</strong><br><small style="color:var(--inkSoft)">👶 ${cust ? esc(cust.babyName || '-') : '-'}</small></td>
+                <td>${svc ? esc(svc.name) : "—"}<br>${typeBadge}</td>
+                <td>${stf ? esc(stf.name) : "—"}</td>
+                <td>${paymentBadge}</td>
+                <td>${statusBadge}</td>
+                <td style="text-align: right;">
+                  <div class="action-cell-group">
+                    ${s.status === 'Akan Datang' ? `
+                      <button class="fx-btn fx-btn-mini" data-action="complete-sch" data-id="${s.id}" style="background:#28a745; color:white;">✓ Selesai</button>
+                    ` : ''}
+                    <button class="fx-btn fx-btn-mini" data-action="wa-sch" data-id="${s.id}" style="background:#25D366; color:white;">💬 WA</button>
+                    <button class="fx-btn-ghost" data-action="confirm-del-sch" data-id="${s.id}">${ICONS.trash}</button>
+                  </div>
+                </td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    `}
 
     <!-- POP-UP MODAL RESERVASI -->
     <div class="modal-overlay" id="sch-modal">
@@ -877,6 +893,21 @@ function viewJadwal(d) {
         </div>
       </div>
     </div>
+
+    <!-- POP-UP MODAL KONFIRMASI HAPUS -->
+    <div class="modal-overlay" id="confirm-modal">
+      <div class="modal-container" style="max-width:360px;">
+        <div class="confirm-modal-box">
+          <div class="confirm-modal-icon">⚠️</div>
+          <h3 style="margin:0 0 8px 0; color:var(--ink);">Hapus Jadwal Ini?</h3>
+          <p style="margin:0; font-size:13px; color:var(--inkSoft);">Data reservasi yang dihapus tidak dapat dikembalikan.</p>
+          <div class="confirm-actions">
+            <button class="fx-btn fx-btn-ghost" id="cancel-del-btn" style="border:1px solid var(--line)">Batal</button>
+            <button class="fx-btn" id="proceed-del-btn" style="background:var(--danger); color:white;">Ya, Hapus</button>
+          </div>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -890,8 +921,51 @@ function bindJadwal() {
 
   openBtn?.addEventListener("click", showModal);
   closeBtn?.addEventListener("click", hideModal);
-  modal?.addEventListener("click", (e) => { if (e.target === modal) hideModal(); });
 
+  // Filter Event Listeners
+  document.querySelectorAll('[data-sch-filter]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.schFilter = btn.dataset.schFilter;
+      renderTab();
+    });
+  });
+
+  // Toggle View Listener
+  document.getElementById("toggle-sch-view")?.addEventListener("click", () => {
+    state.schView = state.schView === "table" ? "calendar" : "table";
+    renderTab();
+  });
+
+  // Modal Hapus Handler
+  let deleteTargetId = null;
+  const confirmModal = document.getElementById("confirm-modal");
+  
+  document.querySelectorAll('[data-action="confirm-del-sch"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      deleteTargetId = btn.dataset.id;
+      confirmModal?.classList.add("active");
+    });
+  });
+
+  document.getElementById("cancel-del-btn")?.addEventListener("click", () => {
+    confirmModal?.classList.remove("active");
+    deleteTargetId = null;
+  });
+
+  document.getElementById("proceed-del-btn")?.addEventListener("click", () => {
+    if (deleteTargetId) {
+      const idx = state.data.schedules.findIndex(s => s.id === deleteTargetId);
+      if (idx !== -1) {
+        state.data.schedules.splice(idx, 1);
+        save();
+        showToast("Jadwal berhasil dihapus", "info");
+      }
+    }
+    confirmModal?.classList.remove("active");
+    renderTab();
+  });
+
+  // Fungsi simpan reservasi, WhatsApp, complete, dll. tetap berjalan seperti biasa
   const paySelect = document.getElementById("sch-pay-method");
   const dpWrap = document.getElementById("sch-dp-wrap");
   paySelect?.addEventListener("change", (e) => {
@@ -903,55 +977,6 @@ function bindJadwal() {
   typeSelect?.addEventListener("change", (e) => {
     transportWrap.style.display = e.target.value === "Home Care" ? "block" : "none";
   });
-
-  const searchInput = document.getElementById("sch-cust-search");
-  const hiddenInput = document.getElementById("sch-customer-id");
-  const dropdown = document.getElementById("sch-cust-dropdown");
-
-  if (searchInput && dropdown) {
-    const renderDropdown = (query = "") => {
-      const q = query.toLowerCase().trim();
-      const filtered = (state.data.customers || []).filter(c => 
-        c.name.toLowerCase().includes(q) || (c.babyName && c.babyName.toLowerCase().includes(q))
-      );
-
-      if (filtered.length === 0) {
-        dropdown.innerHTML = `<div class="combobox-item empty">Pelanggan tidak ditemukan 😅</div>`;
-      } else {
-        dropdown.innerHTML = filtered.map(c => `
-          <div class="combobox-item" data-id="${c.id}" data-name="Bunda ${esc(c.name)} (${esc(c.babyName || 'Bayi')})">
-            <div class="cust-info">
-              <span class="cust-mom">👩 Bunda ${esc(c.name)}</span>
-              <span class="cust-baby">👶 ${esc(c.babyName || '-')}</span>
-            </div>
-            <span class="cust-badge">Pilih ➔</span>
-          </div>
-        `).join("");
-      }
-      dropdown.classList.add("show");
-    };
-
-    searchInput.addEventListener("focus", () => renderDropdown(searchInput.value));
-    searchInput.addEventListener("input", (e) => {
-      hiddenInput.value = "";
-      renderDropdown(e.target.value);
-    });
-
-    dropdown.addEventListener("click", (e) => {
-      const item = e.target.closest(".combobox-item:not(.empty)");
-      if (item) {
-        hiddenInput.value = item.dataset.id;
-        searchInput.value = item.dataset.name;
-        dropdown.classList.remove("show");
-      }
-    });
-
-    document.addEventListener("click", (e) => {
-      if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-        dropdown.classList.remove("show");
-      }
-    });
-  }
 
   document.getElementById("sch-add")?.addEventListener("click", () => {
     const customerId = document.getElementById("sch-customer-id").value;
@@ -982,98 +1007,11 @@ function bindJadwal() {
       note: document.getElementById("sch-note").value.trim()
     });
 
-    const paidNow = payMethod === "Lunas" ? totalCost : (payMethod === "DP" ? dpAmount : 0);
-    if (paidNow > 0) {
-      if (!state.data.transactions) state.data.transactions = [];
-      state.data.transactions.unshift({
-        id: uid(),
-        date: todayISO(),
-        customerId,
-        serviceId,
-        staffId: document.getElementById("sch-staff").value,
-        type: document.getElementById("sch-type").value,
-        transportFee: 0,
-        amount: paidNow,
-        note: payMethod === "Lunas" ? "Pembayaran Lunas Booking" : "DP Reservasi"
-      });
-    }
-
     save();
     showToast("Reservasi berhasil disimpan!", "success");
     hideModal();
     renderTab();
   });
-
-  document.querySelectorAll('[data-action="complete-sch"]').forEach(btn => btn.addEventListener("click", () => {
-    const sch = state.data.schedules.find(s => s.id === btn.dataset.id);
-    if (!sch) return;
-
-    const svc = (state.data.services || []).find(s => s.id === sch.serviceId);
-    const totalAmount = (svc ? svc.price : 0) + (sch.transportFee || 0);
-    const dpPaid = sch.dpAmount || 0;
-    const remainingToPay = Math.max(0, totalAmount - dpPaid);
-
-    sch.status = "Selesai";
-    if (remainingToPay > 0) {
-      if (!state.data.transactions) state.data.transactions = [];
-      state.data.transactions.unshift({
-        id: uid(),
-        date: sch.date,
-        customerId: sch.customerId,
-        serviceId: sch.serviceId,
-        staffId: sch.staffId,
-        type: sch.type || "Studio",
-        transportFee: sch.transportFee || 0,
-        amount: remainingToPay,
-        note: "Pelunasan Perawatan"
-      });
-    }
-    save(); showToast("Treatment selesai!", "success"); renderTab();
-  }));
-
-  document.querySelectorAll('[data-action="wa-sch"]').forEach(btn => btn.addEventListener("click", () => {
-    const sch = state.data.schedules.find(s => s.id === btn.dataset.id);
-    if (!sch) return;
-
-    const cust = (state.data.customers || []).find(c => c.id === sch.customerId);
-    const svc = (state.data.services || []).find(s => s.id === sch.serviceId);
-    const stf = (state.data.staff || []).find(s => s.id === sch.staffId);
-
-    if (!cust || !cust.phone) return showToast("Nomor HP belum terdaftar!", "error");
-    let phoneStr = String(cust.phone).replace(/\D/g, "");
-    if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
-
-    const jamFmt = sch.time ? `${sch.time.replace(':', '.')} WIB` : '09.00 WIB';
-    const totalCost = (svc ? svc.price : 0) + (sch.transportFee || 0);
-    const dpPaid = sch.dpAmount || 0;
-    const remaining = totalCost - dpPaid;
-
-    let dpStatusTxt = dpPaid > 0 
-      ? `\n💳 DP Diterima: ${fmtIDR(dpPaid)}\n💵 Sisa Pelunasan: *${fmtIDR(remaining)}*`
-      : `\n💵 Estimasi Biaya: *${fmtIDR(totalCost)}*`;
-
-    const pesan = `Halo Bunda ${cust.name || ''}! \nKami ingin mengonfirmasi jadwal reservasi di Ulfa Baby Spa.\n Tanggal: ${fmtDate(sch.date)}\n Jam: ${jamFmt}\n Nama Bayi: ${cust.babyName || '-'}\n Layanan: ${svc ? svc.name : '-'} (${sch.type || 'Studio'})\n Terapis: ${stf ? stf.name : '-'}${dpStatusTxt}\n\nMohon konfirmasi kehadirannya ya, Bunda. Sampai jumpa! `;
-
-    window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
-  }));
-
-  document.querySelectorAll('[data-action="del-sch"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.schedules.findIndex(s => s.id === id);
-    if (idx === -1) return;
-
-    const deletedItem = state.data.schedules[idx];
-    state.data.schedules.splice(idx, 1);
-    save();
-    renderTab();
-
-    showToast("Jadwal reservasi dihapus", "info", () => {
-      state.data.schedules.splice(idx, 0, deletedItem);
-      save();
-      renderTab();
-      showToast("Penghapusan dibatalkan", "success");
-    });
-  }));
 }
 
 /* ==========================================================================
