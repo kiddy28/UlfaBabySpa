@@ -1,5 +1,5 @@
 /* ==========================================================================
-   1. CONSTANTS, HELPERS & FIREBASE / SUPABASE CONFIG
+   1. CONSTANTS, HELPERS & CONFIG
    ========================================================================== */
 const uid = () => Math.random().toString(36).slice(2, 10);
 const todayISO = () => new Date().toISOString().slice(0, 10);
@@ -24,13 +24,11 @@ const ICONS = {
   down: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>'
 };
 
-// DATABASE AKUN LOKAL
 const USERS = [
   { username: "admin", password: "Londoireng2026", name: "Ulfa (Owner)", role: "owner" },
   { username: "user", password: "user123", name: "user 1", role: "user" }
 ];
 
-// KONFIGURASI SUPABASE
 const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcW1ubWd3a2lmYmJoamhlcXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5ODE3MTYsImV4cCI6MjEwMTU1NzcxNn0.3n3Yjo-JqZqKMnit4_qQemuvjOE9U7ipq8VOTSxX_9I";
 
@@ -569,10 +567,9 @@ function initCharts(d) {
 }
 
 /* ==========================================================================
-   6. MODULE: JADWAL & BOOKING
+   6. MODULE: JADWAL & BOOKING (FIXED SELESAI, WA, & DRAFT TRANSAKSI)
    ========================================================================== */
 if (!state.schFilter) state.schFilter = "Semua";
-if (!state.schView) state.schView = "table";
 
 function viewJadwal(d) {
   if (!d.schedules) d.schedules = [];
@@ -645,11 +642,11 @@ function viewJadwal(d) {
               <td>${paymentBadge}</td>
               <td>${statusBadge}</td>
               <td style="text-align: right;">
-                <div class="action-cell-group">
+                <div class="action-cell-group" style="display:flex; gap:4px; justify-content:flex-end;">
                   ${s.status === 'Akan Datang' ? `
-                    <button class="fx-btn fx-btn-mini" data-action="complete-sch" data-id="${s.id}" style="background:#28a745; color:white;">✓ Selesai</button>
+                    <button class="fx-btn fx-btn-mini" data-action="complete-sch" data-id="${s.id}" style="background:#28a745; color:white; font-size:11px;">✓ Selesai</button>
                   ` : ''}
-                  <button class="fx-btn fx-btn-mini" data-action="wa-sch" data-id="${s.id}" style="background:#25D366; color:white;">💬 WA</button>
+                  <button class="fx-btn fx-btn-mini" data-action="wa-sch" data-id="${s.id}" style="background:#25D366; color:white; font-size:11px;">💬 WA</button>
                   <button class="fx-btn-ghost" data-action="del-sch" data-id="${s.id}">${ICONS.trash}</button>
                 </div>
               </td>
@@ -815,6 +812,7 @@ function bindJadwal() {
     });
   }
 
+  // SIMPAN RESERVASI BARU & KONEKSIKAN KE TRANSAKSI
   document.getElementById("sch-add")?.addEventListener("click", () => {
     const customerId = document.getElementById("sch-customer-id").value;
     const serviceId = document.getElementById("sch-service").value;
@@ -829,6 +827,8 @@ function bindJadwal() {
     const totalCost = (svc ? svc.price : 0) + transportFee;
 
     if (!state.data.schedules) state.data.schedules = [];
+    
+    // 1. Simpan ke Agenda Jadwal
     state.data.schedules.push({
       id: uid(),
       date: document.getElementById("sch-date").value || todayISO(),
@@ -844,12 +844,90 @@ function bindJadwal() {
       note: document.getElementById("sch-note").value.trim()
     });
 
+    // 2. OTOMATIS CATAT KE TRANSAKSI JIKA ADA PEMBAYARAN SEKARANG (DP / LUNAS)
+    const paidNow = payMethod === "Lunas" ? totalCost : (payMethod === "DP" ? dpAmount : 0);
+    if (paidNow > 0) {
+      if (!state.data.transactions) state.data.transactions = [];
+      state.data.transactions.unshift({
+        id: uid(),
+        date: todayISO(),
+        customerId,
+        serviceId,
+        staffId: document.getElementById("sch-staff").value,
+        type: document.getElementById("sch-type").value,
+        transportFee: 0,
+        amount: paidNow,
+        note: payMethod === "Lunas" ? "Pembayaran Lunas Booking" : "DP Reservasi"
+      });
+    }
+
     save();
-    showToast("Reservasi berhasil disimpan!", "success");
+    showToast("Reservasi berhasil disimpan & pembayaran dicatat!", "success");
     hideModal();
     renderTab();
   });
 
+  // TOMBOL SELESAI TREATMENT (CATAT PELUNASAN KELUAR KE MENU TRANSAKSI)
+  document.querySelectorAll('[data-action="complete-sch"]').forEach(btn => btn.addEventListener("click", () => {
+    const sch = state.data.schedules.find(s => s.id === btn.dataset.id);
+    if (!sch) return;
+
+    const svc = (state.data.services || []).find(s => s.id === sch.serviceId);
+    const totalAmount = (svc ? svc.price : 0) + (sch.transportFee || 0);
+    const dpPaid = sch.dpAmount || 0;
+    const remainingToPay = Math.max(0, totalAmount - dpPaid);
+
+    if (confirm(`Tandai perawatan selesai? Sisa pembayaran ${fmtIDR(remainingToPay)} akan otomatis masuk ke menu Transaksi.`)) {
+      sch.status = "Selesai";
+      
+      if (remainingToPay > 0) {
+        if (!state.data.transactions) state.data.transactions = [];
+        state.data.transactions.unshift({
+          id: uid(),
+          date: sch.date,
+          customerId: sch.customerId,
+          serviceId: sch.serviceId,
+          staffId: sch.staffId,
+          type: sch.type || "Studio",
+          transportFee: sch.transportFee || 0,
+          amount: remainingToPay,
+          note: "Pelunasan Perawatan"
+        });
+      }
+      save(); 
+      showToast("Perawatan selesai & transaksi pelunasan dicatat!", "success"); 
+      renderTab();
+    }
+  }));
+
+  // TOMBOL KIRIM WA KONFIRMASI JADWAL
+  document.querySelectorAll('[data-action="wa-sch"]').forEach(btn => btn.addEventListener("click", () => {
+    const sch = state.data.schedules.find(s => s.id === btn.dataset.id);
+    if (!sch) return;
+
+    const cust = (state.data.customers || []).find(c => c.id === sch.customerId);
+    const svc = (state.data.services || []).find(s => s.id === sch.serviceId);
+    const stf = (state.data.staff || []).find(s => s.id === sch.staffId);
+
+    if (!cust || !cust.phone) return showToast("Nomor HP pelanggan belum ada!", "error");
+    let phoneStr = String(cust.phone).replace(/\D/g, "");
+    if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
+
+    const jamFmt = sch.time ? `${sch.time.replace(':', '.')} WIB` : '09.00 WIB';
+    const totalCost = (svc ? svc.price : 0) + (sch.transportFee || 0);
+    const dpPaid = sch.dpAmount || 0;
+    const remaining = totalCost - dpPaid;
+
+    let dpStatusTxt = dpPaid > 0 
+      ? `\n💳 DP Diterima: ${fmtIDR(dpPaid)}\n💵 Sisa Pelunasan: *${fmtIDR(remaining)}*`
+      : `\n💵 Estimasi Biaya: *${fmtIDR(totalCost)}*`;
+
+    const pesan = `Halo Bunda ${cust.name || ''}! 👋😊\nKami ingin mengonfirmasi jadwal reservasi di Ulfa Baby Spa.\n\n📅 Tanggal: ${fmtDate(sch.date)}\n🕘 Jam: ${jamFmt}\n👶 Nama Bayi: ${cust.babyName || '-'}\n💆 Layanan: ${svc ? svc.name : '-'} (${sch.type || 'Studio'})\n👩‍⚕️ Terapis: ${stf ? stf.name : '-'}${dpStatusTxt}\n\nMohon konfirmasi kehadirannya ya, Bunda. Sampai jumpa! 💖`;
+
+    window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
+  }));
+
+  // TOMBOL HAPUS JADWAL
   document.querySelectorAll('[data-action="del-sch"]').forEach(btn => {
     btn.addEventListener("click", () => {
       if (!confirm("Hapus jadwal ini?")) return;
@@ -927,7 +1005,7 @@ function viewTransaksi(d) {
                     <td>${fmtDate(t.date)}</td>
                     <td><strong>Bunda ${cust ? esc(cust.name) : "—"}</strong></td>
                     <td>${svc ? esc(svc.name) : "—"}<br>${typeBadge}</td>
-                    <td>${stf ? esc(stf.name) : "—"}</td>
+                    <td>${stf ? esc(stf.name) : "—"}<br><small style="color:var(--amber); font-weight:600;">[${esc(t.note || 'Lunas')}]</small></td>
                     <td style="font-weight:600; color:var(--sageDark);">${fmtIDR(t.amount)}</td>
                     <td style="text-align: right;">
                       <div class="action-cell-group">
@@ -1022,7 +1100,7 @@ function bindLayanan() {
 }
 
 /* ==========================================================================
-   9. MODULE: STOK & PELANGGAN (DENGAN FIX PENYIMPANAN DATA)
+   9. MODULE: STOK & PELANGGAN
    ========================================================================== */
 function viewStok(d) {
   return `
@@ -1183,7 +1261,6 @@ function bindPelanggan() {
     renderTab();
   });
 
-  // TANGKAP TOMBOL SIMPAN PELANGGAN
   document.getElementById("cust-add")?.addEventListener("click", () => {
     const nameEl = document.getElementById("cust-name");
     const babyEl = document.getElementById("cust-baby");
