@@ -115,7 +115,7 @@ function setSyncStatus(status) {
     badge.innerHTML = `<span class="sync-dot"></span> Online`;
   } else if (status === "syncing") {
     badge.className = "sync-badge sync-syncing";
-    badge.innerHTML = `<span class="sync-dot"></span> Conecting...`;
+    badge.innerHTML = `<span class="sync-dot"></span> Connecting...`;
   } else {
     badge.className = "sync-badge sync-offline";
     badge.innerHTML = `<span class="sync-dot"></span> Offline`;
@@ -136,10 +136,9 @@ function seedData() {
     ],
     services: [
       { id: svc.baby, name: "Pijat Bayi", category: "Bayi", price: 100000, duration: 60 },
-      { id: svc.swim, name: "Tambal ban", category: "Paket", price: 100000, duration: 30 },
+      { id: svc.swim, name: "Pijat + Berenang", category: "Bayi", price: 120000, duration: 45 },
       { id: svc.momMassage, name: "Pijat Ibu Hamil", category: "Ibu", price: 150000, duration: 60 },
       { id: svc.facial, name: "Newborn Care", category: "Bayi", price: 250000, duration: 60 },
-      { id: svc.facial, name: "Servis AC", category: "Paket", price: 400000, duration: 90 },
     ],
     memberships: [
       { id: uid(), customerId: cust.a, name: "Paket Gold 5x Pijat Bayi", totalSessions: 5, usedSessions: 2, price: 450000 },
@@ -148,7 +147,6 @@ function seedData() {
     staff: [
       { id: stf.s1, name: "Ulfa", role: "Owner", phone: "0812-1111-2222" },
       { id: stf.s2, name: "Sugiono", role: "Terapis Bayi", phone: "0813-3333-4444" },
-      { id: stf.s2, name: "Bahlil", role: "Marketing", phone: "0813-3333-31313" },
     ],
     customers: [
       { id: cust.a, name: "Yanti", babyName: "Yanto", dob: "2026-08-05", phone: "0811-2233-4455", address: "Jl. Mawar No. 12, Kel. Sukamaju" },
@@ -162,8 +160,6 @@ function seedData() {
     inventory: [
       { id: uid(), name: "Minyak Pijat Bayi", unit: "botol", stock: 8, minStock: 2 },
       { id: uid(), name: "Lotion Bayi", unit: "botol", stock: 3, minStock: 2 },
-      { id: uid(), name: "Masker Wajah", unit: "pcs", stock: 38, minStock: 10 },
-      { id: uid(), name: "Kabel", unit: "meter", stock: 50, minStock: 15 },
     ],
     expenses: [
       { id: uid(), date: dayAgo(1), category: "Gaji", amount: 1500000, note: "Gaji mingguan" },
@@ -202,7 +198,6 @@ async function load() {
         save();
       }
     } catch (err) {
-      console.warn("Menggunakan data lokal:", err);
       setSyncStatus("offline");
     }
 
@@ -242,56 +237,6 @@ async function save() {
 }
 
 /* ==========================================================================
-   FUNGSI EKSPOR, IMPOR & BACKUP
-   ========================================================================== */
-function exportToExcel() {
-  if (!state.data || typeof XLSX === "undefined") {
-    return showToast("Gagal mengekspor data!", "error");
-  }
-  const wb = XLSX.utils.book_new();
-  Object.keys(state.data).forEach(key => {
-    if (Array.isArray(state.data[key])) {
-      const ws = XLSX.utils.json_to_sheet(state.data[key]);
-      XLSX.utils.book_append_sheet(wb, ws, key);
-    }
-  });
-  XLSX.writeFile(wb, `Ulfa_Baby_Spa_Data_${todayISO()}.xlsx`);
-  showToast("Data berhasil diekspor ke Excel!", "success");
-}
-
-function backupData() {
-  if (!state.data) return;
-  const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `Backup_UlfaBabySpa_${todayISO()}.json`;
-  a.click();
-  showToast("Backup JSON berhasil diunduh!", "success");
-}
-
-function importDataFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  
-  if (file.name.endsWith(".json")) {
-    reader.onload = (e) => {
-      try {
-        state.data = JSON.parse(e.target.result);
-        save();
-        renderTab();
-        showToast("Data JSON berhasil diimpor!", "success");
-      } catch (err) {
-        showToast("Format file JSON salah!", "error");
-      }
-    };
-    reader.readAsText(file);
-  } else {
-    showToast("Fitur impor file Excel sedang dikembangkan", "info");
-  }
-}
-
-/* ==========================================================================
    3. SISTEM LOGIN & OTORISASI
    ========================================================================== */
 function renderLoginModal() {
@@ -312,7 +257,7 @@ function renderLoginModal() {
   modal.innerHTML = `
     <div class="login-card">
       <div class="login-brand-icon">
-        <img src="icon.png" alt="Ulfa Baby Spa Logo">
+        <img src="icon.png" alt="Ulfa Baby Spa Logo" onerror="this.style.display='none'">
       </div>
       <h2 class="login-title fx-display">Ulfa Baby Spa</h2>
       <p class="login-sub">Masuk untuk mengelola sistem</p>
@@ -345,14 +290,8 @@ function renderLoginModal() {
         localStorage.setItem("spa_user", JSON.stringify(found));
         showToast(`Selamat datang, ${found.name}!`, "success");
         modal.remove();
-        
-        const currentPage = document.body.getAttribute("data-page") || "ringkasan";
-        if (found.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(currentPage)) {
-          window.location.href = "jadwal.html";
-        } else {
-          applyRolePermissions();
-          renderTab();
-        }
+        applyRolePermissions();
+        renderTab();
       } else {
         showToast("Username atau Password salah!", "error");
       }
@@ -362,16 +301,6 @@ function renderLoginModal() {
 
 function applyRolePermissions() {
   if (!state.currentUser) return;
-  const isKasir = state.currentUser.role === "kasir";
-
-  document.querySelectorAll(".navbtn").forEach(btn => {
-    const href = btn.getAttribute("href");
-    if (isKasir && (href.includes("index.html") || href.includes("keuangan.html") || href.includes("staf.html"))) {
-      btn.style.display = "none";
-    } else {
-      btn.style.display = "flex";
-    }
-  });
 
   let profileBadge = document.getElementById("user-profile-badge");
   const sidebar = document.querySelector(".sidebar");
@@ -389,10 +318,6 @@ function applyRolePermissions() {
         <span style="color:var(--blush);font-size:10px;text-transform:uppercase;">${esc(state.currentUser.role)}</span>
       </div>
       <button class="logout-btn" id="logout-btn" title="Keluar">
-        <svg class="logout-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
-          <line x1="12" y1="2" x2="12" y2="12"></line>
-        </svg>
         <span class="logout-text">Keluar</span>
       </button>
     `;
@@ -416,10 +341,6 @@ function initApp() {
   if (!state.currentUser) {
     renderLoginModal();
   } else {
-    if (state.currentUser.role === "kasir" && ["ringkasan", "keuangan", "staf"].includes(page)) {
-      window.location.href = "jadwal.html";
-      return;
-    }
     applyRolePermissions();
     renderTab();
   }
@@ -599,7 +520,6 @@ function initCharts(d) {
     const linePath = points.map((p, i) => (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ");
 
     revWrap.innerHTML = `
-      <div id="chart-tooltip" class="chart-tooltip"></div>
       <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible;">
         <line x1="${padL}" y1="${padT}" x2="${W - padR}" y2="${padT}" stroke="#f0dbe1" stroke-dasharray="3,3" stroke-width="1"/>
         <line x1="${padL}" y1="${padT + chartH / 2}" x2="${W - padR}" y2="${padT + chartH / 2}" stroke="#f0dbe1" stroke-dasharray="3,3" stroke-width="1"/>
@@ -608,7 +528,7 @@ function initCharts(d) {
         <path d="${linePath}" fill="none" stroke="#E85D88" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
 
         ${points.map((p, idx) => `
-          <g class="chart-node" data-val="${fmtIDR(p.val)}" data-date="${p.dateStr}">
+          <g class="chart-node">
             <circle cx="${p.x}" cy="${p.y}" r="5" fill="#FFFFFF" stroke="#E85D88" stroke-width="2.5"/>
             <text x="${p.x}" y="${H - 8}" text-anchor="middle" fill="#7A626A" font-size="10">
               ${days[idx].slice(5)}
@@ -617,22 +537,6 @@ function initCharts(d) {
         `).join('')}
       </svg>
     `;
-
-    const tooltip = document.getElementById("chart-tooltip");
-    revWrap.querySelectorAll(".chart-node").forEach(node => {
-      node.addEventListener("mouseenter", (e) => {
-        tooltip.innerHTML = `<div>${node.dataset.date}</div><div style="color:#E85D88;">${node.dataset.val}</div>`;
-        tooltip.classList.add("show");
-      });
-      node.addEventListener("mousemove", (e) => {
-        const rect = revWrap.getBoundingClientRect();
-        tooltip.style.left = (e.clientX - rect.left) + "px";
-        tooltip.style.top = (e.clientY - rect.top - 10) + "px";
-      });
-      node.addEventListener("mouseleave", () => {
-        tooltip.classList.remove("show");
-      });
-    });
   }
 
   const svcMap = {};
@@ -665,151 +569,102 @@ function initCharts(d) {
 }
 
 /* ==========================================================================
-   6. MODULE: JADWAL & BOOKING (DENGAN KALENDER & QUICK FILTER)
+   6. MODULE: JADWAL & BOOKING
    ========================================================================== */
 if (!state.schFilter) state.schFilter = "Semua";
-if (!state.schView) state.schView = "table"; // 'table' atau 'calendar'
+if (!state.schView) state.schView = "table";
 
 function viewJadwal(d) {
   if (!d.schedules) d.schedules = [];
   
-  // Filter Status
   let list = [...d.schedules];
   if (state.schFilter !== "Semua") {
     list = list.filter(s => s.status === state.schFilter);
   }
   const sorted = list.sort((a, b) => `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`));
 
-  // Kalender Data (Bulan Ini)
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   return `
     ${header("Jadwal & Booking Spa", "Atur janji temu, pembayaran, dan reservasi pelanggan")}
     
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
-      <!-- Quick Filter Status -->
       <div class="status-filter-group">
         <button class="status-btn ${state.schFilter === 'Semua' ? 'active' : ''}" data-sch-filter="Semua">Semua</button>
         <button class="status-btn ${state.schFilter === 'Akan Datang' ? 'active' : ''}" data-sch-filter="Akan Datang">Akan Datang</button>
         <button class="status-btn ${state.schFilter === 'Selesai' ? 'active' : ''}" data-sch-filter="Selesai">Selesai</button>
       </div>
 
-      <!-- Toggle View & Tambah -->
-      <div style="display:flex; gap:8px;">
-        <button class="fx-btn fx-btn-ghost" id="toggle-sch-view" style="border:1px solid var(--line)">
-          ${state.schView === 'table' ? '📅 Tampilan Kalender' : '📋 Tampilan Tabel'}
-        </button>
-        <button class="fx-btn" id="open-sch-modal">${ICONS.plus} Tambah Reservasi Baru</button>
-      </div>
+      <button class="fx-btn" id="open-sch-modal">${ICONS.plus} Tambah Reservasi Baru</button>
     </div>
 
-    ${state.schView === 'calendar' ? `
-      <!-- CALENDAR VIEW -->
-      <div class="fx-card">
-        <div class="calendar-grid">
-          <div class="calendar-day-header">Min</div><div class="calendar-day-header">Sen</div>
-          <div class="calendar-day-header">Sel</div><div class="calendar-day-header">Rab</div>
-          <div class="calendar-day-header">Kam</div><div class="calendar-day-header">Jum</div>
-          <div class="calendar-day-header">Sab</div>
+    <div class="fx-card">
+      <table class="fx-table">
+        <thead>
+          <tr>
+            <th style="width: 14%;">WAKTU & TANGGAL</th>
+            <th style="width: 18%;">PELANGGAN</th>
+            <th style="width: 20%;">LAYANAN & TIPE</th>
+            <th style="width: 12%;">TERAPIS</th>
+            <th style="width: 14%;">METODE BAYAR</th>
+            <th style="width: 10%;">STATUS</th>
+            <th style="width: 12%; text-align: right;">AKSI</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${sorted.length === 0 ? '<tr class="empty-row"><td colspan="7">Tidak ada agenda reservasi.</td></tr>' : ''}
+          ${sorted.map(s => {
+            const cust = (d.customers || []).find(c => c.id === s.customerId);
+            const svc = (d.services || []).find(srv => srv.id === s.serviceId);
+            const stf = (d.staff || []).find(st => st.id === s.staffId);
+            
+            const totalCost = (svc ? svc.price : 0) + (s.transportFee || 0);
+            const dp = s.dpAmount || 0;
+            const remaining = totalCost - dp;
 
-          ${Array.from({ length: daysInMonth }).map((_, i) => {
-            const dayNum = i + 1;
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-            const isToday = dateStr === todayISO();
-            const dayEvents = sorted.filter(s => s.date === dateStr);
+            let paymentBadge = `<span class="badge" style="background:#FFF3CD; color:#856404; font-size:10.5px;">Bayar di Tempat</span>`;
+            if (s.payMethod === "DP") {
+              paymentBadge = `<span class="badge" style="background:#D1ECF1; color:#0C5460; font-size:10.5px;">DP: ${fmtIDR(dp)}<br><small>Sisa: ${fmtIDR(remaining)}</small></span>`;
+            } else if (s.payMethod === "Lunas") {
+              paymentBadge = `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10.5px;">✓ Lunas Awalan</span>`;
+            }
 
-            return `
-              <div class="calendar-day-cell ${isToday ? 'today' : ''}">
-                <span class="calendar-day-num">${dayNum}</span>
-                ${dayEvents.map(s => {
-                  const cust = (d.customers || []).find(c => c.id === s.customerId);
-                  return `<div class="calendar-event-item ${s.status === 'Selesai' ? 'completed' : ''}" title="${s.time} - Bunda ${cust ? esc(cust.name) : ''}">
-                    ${s.time} ${cust ? esc(cust.name) : ''}
-                  </div>`;
-                }).join('')}
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    ` : `
-      <!-- TABLE VIEW -->
-      <div class="fx-card">
-        <table class="fx-table">
-          <thead>
-            <tr>
-              <th style="width: 14%;">WAKTU & TANGGAL</th>
-              <th style="width: 18%;">PELANGGAN</th>
-              <th style="width: 20%;">LAYANAN & TIPE</th>
-              <th style="width: 12%;">TERAPIS</th>
-              <th style="width: 14%;">METODE BAYAR</th>
-              <th style="width: 10%;">STATUS</th>
-              <th style="width: 12%; text-align: right;">AKSI</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sorted.length === 0 ? '<tr class="empty-row"><td colspan="7">Tidak ada agenda reservasi.</td></tr>' : ''}
-            ${sorted.map(s => {
-              const cust = (d.customers || []).find(c => c.id === s.customerId);
-              const svc = (d.services || []).find(srv => srv.id === s.serviceId);
-              const stf = (d.staff || []).find(st => st.id === s.staffId);
-              
-              const totalCost = (svc ? svc.price : 0) + (s.transportFee || 0);
-              const dp = s.dpAmount || 0;
-              const remaining = totalCost - dp;
+            let statusBadge = `<span class="badge badge-ok">${s.status}</span>`;
+            if (s.status === "Selesai") statusBadge = `<span class="badge" style="background:#E2F0D9; color:#385723;">✓ Selesai</span>`;
 
-              let paymentBadge = `<span class="badge" style="background:#FFF3CD; color:#856404; font-size:10.5px;">Bayar di Tempat</span>`;
-              if (s.payMethod === "DP") {
-                paymentBadge = `<span class="badge" style="background:#D1ECF1; color:#0C5460; font-size:10.5px;">DP: ${fmtIDR(dp)}<br><small>Sisa: ${fmtIDR(remaining)}</small></span>`;
-              } else if (s.payMethod === "Lunas") {
-                paymentBadge = `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10.5px;">✓ Lunas Awalan</span>`;
-              }
+            const typeBadge = s.type === 'Home Care' 
+              ? `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10px;">🏠 Home Care</span>` 
+              : `<span class="badge" style="background:#FDECF1; color:var(--sageDark); font-size:10px;">🏢 Studio</span>`;
 
-              let statusBadge = `<span class="badge badge-ok">${s.status}</span>`;
-              if (s.status === "Selesai") statusBadge = `<span class="badge" style="background:#E2F0D9; color:#385723;">✓ Selesai</span>`;
+            return `<tr>
+              <td>
+                <strong style="color:var(--sageDark); font-size:13.5px;">⏰ ${s.time} WIB</strong><br>
+                <small style="color:var(--inkSoft)">${fmtDate(s.date)}</small>
+              </td>
+              <td><strong>Bunda ${cust ? esc(cust.name) : "—"}</strong><br><small style="color:var(--inkSoft)">👶 ${cust ? esc(cust.babyName || '-') : '-'}</small></td>
+              <td>${svc ? esc(svc.name) : "—"}<br>${typeBadge}</td>
+              <td>${stf ? esc(stf.name) : "—"}</td>
+              <td>${paymentBadge}</td>
+              <td>${statusBadge}</td>
+              <td style="text-align: right;">
+                <div class="action-cell-group">
+                  ${s.status === 'Akan Datang' ? `
+                    <button class="fx-btn fx-btn-mini" data-action="complete-sch" data-id="${s.id}" style="background:#28a745; color:white;">✓ Selesai</button>
+                  ` : ''}
+                  <button class="fx-btn fx-btn-mini" data-action="wa-sch" data-id="${s.id}" style="background:#25D366; color:white;">💬 WA</button>
+                  <button class="fx-btn-ghost" data-action="del-sch" data-id="${s.id}">${ICONS.trash}</button>
+                </div>
+              </td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
 
-              const typeBadge = s.type === 'Home Care' 
-                ? `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10px;">🏠 Home Care</span>` 
-                : `<span class="badge" style="background:#FDECF1; color:var(--sageDark); font-size:10px;">🏢 Studio</span>`;
-
-              return `<tr>
-                <td>
-                  <strong style="color:var(--sageDark); font-size:13.5px;">⏰ ${s.time} WIB</strong><br>
-                  <small style="color:var(--inkSoft)">${fmtDate(s.date)}</small>
-                </td>
-                <td><strong>Bunda ${cust ? esc(cust.name) : "—"}</strong><br><small style="color:var(--inkSoft)">👶 ${cust ? esc(cust.babyName || '-') : '-'}</small></td>
-                <td>${svc ? esc(svc.name) : "—"}<br>${typeBadge}</td>
-                <td>${stf ? esc(stf.name) : "—"}</td>
-                <td>${paymentBadge}</td>
-                <td>${statusBadge}</td>
-                <td style="text-align: right;">
-                  <div class="action-cell-group">
-                    ${s.status === 'Akan Datang' ? `
-                      <button class="fx-btn fx-btn-mini" data-action="complete-sch" data-id="${s.id}" style="background:#28a745; color:white;">✓ Selesai</button>
-                    ` : ''}
-                    <button class="fx-btn fx-btn-mini" data-action="wa-sch" data-id="${s.id}" style="background:#25D366; color:white;">💬 WA</button>
-                    <button class="fx-btn-ghost" data-action="confirm-del-sch" data-id="${s.id}">${ICONS.trash}</button>
-                  </div>
-                </td>
-              </tr>`;
-            }).join("")}
-          </tbody>
-        </table>
-      </div>
-    `}
-
-    <!-- POP-UP MODAL RESERVASI -->
+    <!-- MODAL RESERVASI -->
     <div class="modal-overlay" id="sch-modal">
       <div class="modal-container">
         <div class="modal-header">
-          <div class="modal-title-group">
-            <h3 class="modal-title">✨ Tambah Reservasi Baru</h3>
-            <p class="modal-sub">Isi detail jadwal reservasi dan metode pembayaran pelanggan</p>
-          </div>
-          <button class="modal-close-btn" id="close-sch-modal" aria-label="Tutup">✕</button>
+          <h3 class="modal-title">✨ Tambah Reservasi Baru</h3>
+          <button class="modal-close-btn" id="close-sch-modal">✕</button>
         </div>
 
         <div class="modal-body">
@@ -824,13 +679,11 @@ function viewJadwal(d) {
             </div>
           </div>
 
-          <div class="field field-relative">
+          <div class="field" style="position:relative;">
             <label class="field-label" for="sch-cust-search">👤 Cari & Pilih Pelanggan</label>
-            <div class="input-with-icon">
-              <input class="fx-input" id="sch-cust-search" placeholder="Ketik nama ibu atau bayi..." autocomplete="off">
-            </div>
+            <input class="fx-input" id="sch-cust-search" placeholder="Ketik nama ibu atau bayi..." autocomplete="off">
             <input type="hidden" id="sch-customer-id">
-            <div class="combobox-dropdown" id="sch-cust-dropdown"></div>
+            <div class="combobox-dropdown" id="sch-cust-dropdown" style="display:none; position:absolute; width:100%; z-index:1000; background:white; border:1px solid var(--line); border-radius:8px; max-height:150px; overflow-y:auto; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
           </div>
 
           <div class="modal-form-row">
@@ -875,36 +728,21 @@ function viewJadwal(d) {
             </div>
 
             <div class="field" id="sch-dp-wrap" style="display:none;">
-              <label class="field-label" for="sch-dp">💰 Nominal DP / Uang Muka (Rp)</label>
+              <label class="field-label" for="sch-dp">💰 Nominal DP (Rp)</label>
               <input class="fx-input" type="number" id="sch-dp" placeholder="contoh: 50000">
             </div>
           </div>
 
           <div class="field">
-            <label class="field-label" for="sch-note">📝 Catatan Tambahan / Alamat</label>
-            <input class="fx-input" id="sch-note" placeholder="Permintaan khusus, patokan alamat, dll...">
+            <label class="field-label" for="sch-note">📝 Catatan Tambahan</label>
+            <input class="fx-input" id="sch-note" placeholder="Permintaan khusus / alamat...">
           </div>
         </div>
 
-        <div class="modal-footer">
-          <button class="fx-btn fx-btn-submit" id="sch-add">
+        <div class="modal-footer" style="padding:16px; border-top:1px solid var(--line);">
+          <button class="fx-btn fx-btn-submit" id="sch-add" style="width:100%;">
             ${ICONS.plus} Simpan Reservasi
           </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- POP-UP MODAL KONFIRMASI HAPUS -->
-    <div class="modal-overlay" id="confirm-modal">
-      <div class="modal-container" style="max-width:360px;">
-        <div class="confirm-modal-box">
-          <div class="confirm-modal-icon">⚠️</div>
-          <h3 style="margin:0 0 8px 0; color:var(--ink);">Hapus Jadwal Ini?</h3>
-          <p style="margin:0; font-size:13px; color:var(--inkSoft);">Data reservasi yang dihapus tidak dapat dikembalikan.</p>
-          <div class="confirm-actions">
-            <button class="fx-btn fx-btn-ghost" id="cancel-del-btn" style="border:1px solid var(--line)">Batal</button>
-            <button class="fx-btn" id="proceed-del-btn" style="background:var(--danger); color:white;">Ya, Hapus</button>
-          </div>
         </div>
       </div>
     </div>
@@ -922,7 +760,6 @@ function bindJadwal() {
   openBtn?.addEventListener("click", showModal);
   closeBtn?.addEventListener("click", hideModal);
 
-  // Filter Event Listeners
   document.querySelectorAll('[data-sch-filter]').forEach(btn => {
     btn.addEventListener("click", () => {
       state.schFilter = btn.dataset.schFilter;
@@ -930,42 +767,6 @@ function bindJadwal() {
     });
   });
 
-  // Toggle View Listener
-  document.getElementById("toggle-sch-view")?.addEventListener("click", () => {
-    state.schView = state.schView === "table" ? "calendar" : "table";
-    renderTab();
-  });
-
-  // Modal Hapus Handler
-  let deleteTargetId = null;
-  const confirmModal = document.getElementById("confirm-modal");
-  
-  document.querySelectorAll('[data-action="confirm-del-sch"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      deleteTargetId = btn.dataset.id;
-      confirmModal?.classList.add("active");
-    });
-  });
-
-  document.getElementById("cancel-del-btn")?.addEventListener("click", () => {
-    confirmModal?.classList.remove("active");
-    deleteTargetId = null;
-  });
-
-  document.getElementById("proceed-del-btn")?.addEventListener("click", () => {
-    if (deleteTargetId) {
-      const idx = state.data.schedules.findIndex(s => s.id === deleteTargetId);
-      if (idx !== -1) {
-        state.data.schedules.splice(idx, 1);
-        save();
-        showToast("Jadwal berhasil dihapus", "info");
-      }
-    }
-    confirmModal?.classList.remove("active");
-    renderTab();
-  });
-
-  // Fungsi simpan reservasi, WhatsApp, complete, dll. tetap berjalan seperti biasa
   const paySelect = document.getElementById("sch-pay-method");
   const dpWrap = document.getElementById("sch-dp-wrap");
   paySelect?.addEventListener("change", (e) => {
@@ -977,6 +778,42 @@ function bindJadwal() {
   typeSelect?.addEventListener("change", (e) => {
     transportWrap.style.display = e.target.value === "Home Care" ? "block" : "none";
   });
+
+  // COMBOBOX CARI PELANGGAN
+  const custSearch = document.getElementById("sch-cust-search");
+  const custIdInput = document.getElementById("sch-customer-id");
+  const custDropdown = document.getElementById("sch-cust-dropdown");
+
+  if (custSearch && custDropdown) {
+    const renderCustDropdown = (q) => {
+      const filtered = (state.data.customers || []).filter(c => 
+        c.name.toLowerCase().includes(q.toLowerCase()) || (c.babyName && c.babyName.toLowerCase().includes(q.toLowerCase()))
+      );
+
+      if (filtered.length === 0) {
+        custDropdown.innerHTML = `<div style="padding:8px 12px; font-size:12px; color:var(--inkSoft);">Tidak ditemukan</div>`;
+      } else {
+        custDropdown.innerHTML = filtered.map(c => `
+          <div class="cust-opt-item" data-id="${c.id}" data-name="Bunda ${esc(c.name)}" style="padding:8px 12px; cursor:pointer; border-bottom:1px solid #f0f0f0; font-size:13px;">
+            <strong>Bunda ${esc(c.name)}</strong> <small>(Bayi: ${esc(c.babyName || '-')})</small>
+          </div>
+        `).join("");
+      }
+      custDropdown.style.display = "block";
+    };
+
+    custSearch.addEventListener("focus", () => renderCustDropdown(custSearch.value));
+    custSearch.addEventListener("input", (e) => renderCustDropdown(e.target.value));
+
+    custDropdown.addEventListener("click", (e) => {
+      const item = e.target.closest(".cust-opt-item");
+      if (item) {
+        custIdInput.value = item.dataset.id;
+        custSearch.value = item.dataset.name;
+        custDropdown.style.display = "none";
+      }
+    });
+  }
 
   document.getElementById("sch-add")?.addEventListener("click", () => {
     const customerId = document.getElementById("sch-customer-id").value;
@@ -1011,6 +848,14 @@ function bindJadwal() {
     showToast("Reservasi berhasil disimpan!", "success");
     hideModal();
     renderTab();
+  });
+
+  document.querySelectorAll('[data-action="del-sch"]').forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (!confirm("Hapus jadwal ini?")) return;
+      state.data.schedules = state.data.schedules.filter(s => s.id !== btn.dataset.id);
+      save(); showToast("Jadwal dihapus", "info"); renderTab();
+    });
   });
 }
 
@@ -1078,18 +923,15 @@ function viewTransaksi(d) {
               ? `<span class="badge" style="background:#E2F0D9; color:#385723; font-size:10px;">🏠 Home Care</span>` 
               : `<span class="badge" style="background:#FDECF1; color:var(--sageDark); font-size:10px;">🏢 Studio</span>`;
 
-            const noteBadge = t.note ? `<br><small style="color:var(--amber); font-weight:700;">[${esc(t.note)}]</small>` : '';
-
             return `<tr>
                     <td>${fmtDate(t.date)}</td>
                     <td><strong>Bunda ${cust ? esc(cust.name) : "—"}</strong></td>
                     <td>${svc ? esc(svc.name) : "—"}<br>${typeBadge}</td>
-                    <td>${stf ? esc(stf.name) : "—"}${noteBadge}</td>
+                    <td>${stf ? esc(stf.name) : "—"}</td>
                     <td style="font-weight:600; color:var(--sageDark);">${fmtIDR(t.amount)}</td>
                     <td style="text-align: right;">
                       <div class="action-cell-group">
                         <button class="fx-btn fx-btn-mini" onclick="printReceipt('${t.id}')" style="background:#4A1E2B; color:white;">🖨️ Struk</button>
-                        <button class="fx-btn fx-btn-mini" data-action="wa-tx" data-id="${t.id}" style="background:#25D366; color:white;">💬 WA</button>
                         <button class="fx-btn-ghost" data-action="del-tx" data-id="${t.id}">${ICONS.trash}</button>
                       </div>
                     </td>
@@ -1110,35 +952,9 @@ function bindTransaksi() {
   });
 
   document.querySelectorAll('[data-action="del-tx"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.transactions.findIndex(t => t.id === id);
-    if (idx === -1) return;
-
-    const deletedItem = state.data.transactions[idx];
-    state.data.transactions.splice(idx, 1);
-    save();
-    renderTab();
-
-    showToast("Transaksi berhasil dihapus", "info", () => {
-      state.data.transactions.splice(idx, 0, deletedItem);
-      save();
-      renderTab();
-      showToast("Transaksi dikembalikan", "success");
-    });
-  }));
-
-  document.querySelectorAll('[data-action="wa-tx"]').forEach(btn => btn.addEventListener("click", () => {
-    const tx = state.data.transactions.find(t => t.id === btn.dataset.id);
-    if (!tx) return;
-    const cust = state.data.customers ? state.data.customers.find(c => c.id === tx.customerId) : null;
-    const svc = state.data.services ? state.data.services.find(s => s.id === tx.serviceId) : null;
-
-    if (!cust || !cust.phone) return showToast("Nomor HP belum terdaftar!", "error");
-    let phoneStr = String(cust.phone).replace(/\D/g, "");
-    if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
-
-    const pesan = `Terima kasih atas pembayarannya di *Ulfa Baby Spa*! \n\n *NOTA PEMBAYARAN*\n Tanggal: ${fmtDate(tx.date)}\n Pelanggan: Bunda ${cust.name || '-'}\n Layanan: ${svc ? svc.name : '-'}\n Nominal Dibayar: *${fmtIDR(tx.amount)}* _(${tx.note || 'Lunas'})_\n\nSampai jumpa di perawatan berikutnya! `;
-    window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
+    if (!confirm("Hapus transaksi?")) return;
+    state.data.transactions = state.data.transactions.filter(t => t.id !== btn.dataset.id);
+    save(); renderTab();
   }));
 
   document.querySelectorAll('[data-page-action="tx"]').forEach(btn => btn.addEventListener("click", () => {
@@ -1150,8 +966,6 @@ function bindTransaksi() {
    8. MODULE: LAYANAN & MEMBERSHIP
    ========================================================================== */
 function viewLayanan(d) {
-  if (!d.memberships) d.memberships = [];
-
   return `
     ${header("Layanan & Membership", "Kelola daftar layanan spa dan paket membership pelanggan")}
     
@@ -1187,57 +1001,6 @@ function viewLayanan(d) {
           </tr>`).join("")}
         </tbody>
       </table>
-    </div>
-
-    <div class="fx-card">
-      <div class="card-title">⭐ Tambah Paket Membership Pelanggan</div>
-      <div class="form-grid">
-        <div class="field" style="grid-column: span 2;">
-          <span class="field-label">Pilih Pelanggan</span>
-          <select class="fx-input" id="mb-customer">
-            <option value="">Pilih pelanggan...</option>
-            ${(d.customers || []).map(c => `<option value="${c.id}">${esc(c.name)} (${esc(c.babyName || 'Bayi')})</option>`).join('')}
-          </select>
-        </div>
-        <div class="field"><span class="field-label">Nama Paket</span><input class="fx-input" id="mb-name" placeholder="mis. Paket Gold 5x Massage"></div>
-        <div class="field"><span class="field-label">Total Sesi Perawatan</span><input class="fx-input" type="number" id="mb-total" placeholder="5"></div>
-        <div class="field"><span class="field-label">Harga Paket (Rp)</span><input class="fx-input" type="number" id="mb-price" placeholder="450000"></div>
-        <button class="fx-btn" id="mb-add" style="margin-top: auto;">${ICONS.plus} Buat Paket</button>
-      </div>
-
-      <div style="margin-top: 24px;">
-        <div class="card-title">💳 Daftar Membership Aktif</div>
-        <div class="pkg-grid">
-          ${d.memberships.length === 0 ? '<p style="color:var(--inkSoft); font-size:13px;">Belum ada paket membership terdaftar.</p>' : ''}
-          ${d.memberships.map(m => {
-            const cust = (d.customers || []).find(c => c.id === m.customerId);
-            const remaining = m.totalSessions - m.usedSessions;
-            const pct = Math.round((m.usedSessions / m.totalSessions) * 100);
-
-            return `
-              <div class="pkg-card">
-                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
-                  <div>
-                    <strong style="font-size:14px; color:var(--ink);">${esc(m.name)}</strong><br>
-                    <small style="color:var(--sageDark); font-weight:600;">Bunda ${cust ? esc(cust.name) : '-'}</small>
-                  </div>
-                  <button class="fx-btn-ghost" data-action="del-mb" data-id="${m.id}">${ICONS.trash}</button>
-                </div>
-                <div class="pkg-bar">
-                  <div class="pkg-bar-fill" style="width:${pct}%;"></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; margin-bottom:12px;">
-                  <span style="color:var(--inkSoft)">Terpakai: ${m.usedSessions}/${m.totalSessions} Sesi</span>
-                  <strong style="color:${remaining > 0 ? '#385723' : 'var(--danger)'}">${remaining} Sesi Tersisa</strong>
-                </div>
-                <div style="display:flex; gap:6px;">
-                  <button class="fx-btn fx-btn-mini" data-action="use-mb" data-id="${m.id}" style="width:100%;" ${remaining <= 0 ? 'disabled style="opacity:0.5"' : ''}>✓ Gunakan 1 Sesi</button>
-                </div>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
     </div>`;
 }
 
@@ -1252,85 +1015,23 @@ function bindLayanan() {
   });
 
   document.querySelectorAll('[data-action="del-svc"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.services.findIndex(s => s.id === id);
-    if (idx === -1) return;
-
-    const deletedItem = state.data.services[idx];
-    state.data.services.splice(idx, 1);
-    save();
-    renderTab();
-
-    showToast("Layanan dihapus", "info", () => {
-      state.data.services.splice(idx, 0, deletedItem);
-      save();
-      renderTab();
-      showToast("Layanan dikembalikan", "success");
-    });
-  }));
-
-  document.getElementById("mb-add")?.addEventListener("click", () => {
-    const customerId = document.getElementById("mb-customer").value;
-    const name = document.getElementById("mb-name").value.trim();
-    const totalSessions = Number(document.getElementById("mb-total").value) || 0;
-    const price = Number(document.getElementById("mb-price").value) || 0;
-
-    if (!customerId || !name || !totalSessions) return showToast("Lengkapi data membership!", "error");
-
-    if (!state.data.memberships) state.data.memberships = [];
-    state.data.memberships.push({
-      id: uid(),
-      customerId,
-      name,
-      totalSessions,
-      usedSessions: 0,
-      price
-    });
-
-    save(); showToast("Paket membership berhasil dibuat!", "success"); renderTab();
-  });
-
-  document.querySelectorAll('[data-action="use-mb"]').forEach(btn => btn.addEventListener("click", () => {
-    const mb = state.data.memberships.find(m => m.id === btn.dataset.id);
-    if (!mb) return;
-    if (mb.usedSessions < mb.totalSessions) {
-      mb.usedSessions++; save(); showToast("1 Sesi terpakai!", "success"); renderTab();
-    }
-  }));
-
-  document.querySelectorAll('[data-action="del-mb"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.memberships.findIndex(m => m.id === id);
-    if (idx === -1) return;
-
-    const deletedItem = state.data.memberships[idx];
-    state.data.memberships.splice(idx, 1);
-    save();
-    renderTab();
-
-    showToast("Paket membership dihapus", "info", () => {
-      state.data.memberships.splice(idx, 0, deletedItem);
-      save();
-      renderTab();
-      showToast("Membership dikembalikan", "success");
-    });
+    if (!confirm("Hapus layanan?")) return;
+    state.data.services = state.data.services.filter(s => s.id !== btn.dataset.id);
+    save(); renderTab();
   }));
 }
 
 /* ==========================================================================
-   9. MODULE: STOK, PELANGGAN, KEUANGAN & STAF
-   ========================================================================== */
-/* ==========================================================================
-   MODULE: STOK (DENGAN FITUR TAMBAH / KURANGI / EDIT)
+   9. MODULE: STOK & PELANGGAN (DENGAN FIX PENYIMPANAN DATA)
    ========================================================================== */
 function viewStok(d) {
   return `
-    ${header("Stok Bahan & Perlengkapan", "Pantau dan sesuaikan jumlah bahan habis pakai secara praktis")}
+    ${header("Stok Bahan & Perlengkapan", "Pantau dan sesuaikan jumlah bahan habis pakai")}
     <div class="fx-card">
       <div class="card-title">➕ Tambah Barang Baru</div>
       <div class="form-grid">
         <div class="field"><span class="field-label">Nama barang</span><input class="fx-input" id="inv-name" placeholder="mis. Minyak Pijat"></div>
-        <div class="field"><span class="field-label">Satuan</span><input class="fx-input" id="inv-unit" placeholder="botol / pcs / meter"></div>
+        <div class="field"><span class="field-label">Satuan</span><input class="fx-input" id="inv-unit" placeholder="botol / pcs"></div>
         <div class="field"><span class="field-label">Stok awal</span><input class="fx-input" type="number" id="inv-stock" placeholder="10"></div>
         <div class="field"><span class="field-label">Batas minimum</span><input class="fx-input" type="number" id="inv-min" placeholder="2"></div>
         <button class="fx-btn" id="inv-add" style="margin-top:auto;">${ICONS.plus} Tambah</button>
@@ -1341,67 +1042,33 @@ function viewStok(d) {
       <table class="fx-table">
         <thead>
           <tr>
-            <th style="width: 25%;">BARANG</th>
-            <th style="width: 20%;">STOK SAAT INI</th>
-            <th style="width: 15%;">BATAS MIN</th>
-            <th style="width: 15%;">STATUS</th>
-            <th style="width: 25%; text-align: right;">SESUAIKAN STOK / AKSI</th>
+            <th style="width: 30%;">BARANG</th>
+            <th style="width: 20%;">STOK</th>
+            <th style="width: 20%;">BATAS MIN</th>
+            <th style="width: 20%;">STATUS</th>
+            <th style="width: 10%; text-align: right;">AKSI</th>
           </tr>
         </thead>
         <tbody>
-          ${(!d.inventory || d.inventory.length === 0) ? '<tr class="empty-row"><td colspan="5">Belum ada data barang di inventaris.</td></tr>' : ''}
           ${(d.inventory || []).map(i => `<tr>
             <td><strong>${esc(i.name)}</strong></td>
-            <td>
-              <span style="font-size:15px; font-weight:700; color:var(--ink);">${i.stock}</span> 
-              <small style="color:var(--inkSoft);">${esc(i.unit)}</small>
-            </td>
+            <td>${i.stock} ${esc(i.unit)}</td>
             <td>${i.minStock} ${esc(i.unit)}</td>
             <td>${i.stock <= i.minStock ? '<span class="badge badge-low">⚠️ Menipis</span>' : '<span class="badge badge-ok">Aman</span>'}</td>
             <td style="text-align: right;">
-              <div class="action-cell-group" style="justify-content: flex-end; gap: 4px;">
-                <button class="fx-btn fx-btn-mini" data-action="adjust-stock" data-id="${i.id}" data-amount="-1" style="background:#dc3545; color:white; font-weight:bold; width:28px;" title="Kurangi 1">-</button>
-                <button class="fx-btn fx-btn-mini" data-action="adjust-stock" data-id="${i.id}" data-amount="1" style="background:#28a745; color:white; font-weight:bold; width:28px;" title="Tambah 1">+</button>
-                <button class="fx-btn fx-btn-mini" data-action="edit-inv" data-id="${i.id}" style="background:var(--sage); color:white; margin-left:4px;">✏️ Edit</button>
-                <button class="fx-btn-ghost" data-action="del-inv" data-id="${i.id}">${ICONS.trash}</button>
-              </div>
+              <button class="fx-btn-ghost" data-action="del-inv" data-id="${i.id}">${ICONS.trash}</button>
             </td>
           </tr>`).join("")}
         </tbody>
       </table>
-    </div>
-
-    <!-- POP-UP MODAL EDIT STOK -->
-    <div class="modal-overlay" id="edit-inv-modal">
-      <div class="modal-container" style="max-width:400px;">
-        <div class="modal-header">
-          <h3 class="modal-title">✏️ Edit Data Barang</h3>
-          <button class="modal-close-btn" id="close-edit-inv-modal">✕</button>
-        </div>
-        <div class="modal-body">
-          <input type="hidden" id="edit-inv-id">
-          <div class="field"><span class="field-label">Nama Barang</span><input class="fx-input" id="edit-inv-name"></div>
-          <div class="field"><span class="field-label">Satuan</span><input class="fx-input" id="edit-inv-unit"></div>
-          <div class="modal-form-row">
-            <div class="field"><span class="field-label">Jumlah Stok</span><input class="fx-input" type="number" id="edit-inv-stock"></div>
-            <div class="field"><span class="field-label">Batas Minimum</span><input class="fx-input" type="number" id="edit-inv-min"></div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="fx-btn fx-btn-submit" id="save-edit-inv-btn">Simpan Perubahan</button>
-        </div>
-      </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function bindStok() {
-  // 1. Tambah Barang Baru
   document.getElementById("inv-add")?.addEventListener("click", () => {
     const name = document.getElementById("inv-name").value.trim();
     if (!name) return showToast("Isi Nama Barang!", "error");
     if (!state.data.inventory) state.data.inventory = [];
-
     state.data.inventory.push({
       id: uid(),
       name,
@@ -1409,126 +1076,28 @@ function bindStok() {
       stock: Number(document.getElementById("inv-stock").value) || 0,
       minStock: Number(document.getElementById("inv-min").value) || 0
     });
-
-    save();
-    showToast("Barang berhasil ditambahkan", "success");
-    renderTab();
+    save(); showToast("Barang ditambahkan", "success"); renderTab();
   });
 
-  // 2. Cepat Tambah / Kurangi Stok (+1 / -1)
-  document.querySelectorAll('[data-action="adjust-stock"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const amount = Number(btn.dataset.amount);
-      const item = state.data.inventory.find(i => i.id === id);
-
-      if (item) {
-        if (item.stock + amount < 0) {
-          return showToast("Stok tidak bisa kurang dari 0!", "error");
-        }
-        item.stock += amount;
-        save();
-        renderTab();
-      }
-    });
-  });
-
-  // 3. Edit Detail Barang via Modal
-  const editModal = document.getElementById("edit-inv-modal");
-  const closeEditBtn = document.getElementById("close-edit-inv-modal");
-
-  document.querySelectorAll('[data-action="edit-inv"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const item = state.data.inventory.find(i => i.id === btn.dataset.id);
-      if (!item) return;
-
-      document.getElementById("edit-inv-id").value = item.id;
-      document.getElementById("edit-inv-name").value = item.name;
-      document.getElementById("edit-inv-unit").value = item.unit;
-      document.getElementById("edit-inv-stock").value = item.stock;
-      document.getElementById("edit-inv-min").value = item.minStock;
-
-      editModal?.classList.add("active");
-      document.body.classList.add("modal-open");
-    });
-  });
-
-  closeEditBtn?.addEventListener("click", () => {
-    editModal?.classList.remove("active");
-    document.body.classList.remove("modal-open");
-  });
-
-  document.getElementById("save-edit-inv-btn")?.addEventListener("click", () => {
-    const id = document.getElementById("edit-inv-id").value;
-    const item = state.data.inventory.find(i => i.id === id);
-
-    if (item) {
-      item.name = document.getElementById("edit-inv-name").value.trim() || item.name;
-      item.unit = document.getElementById("edit-inv-unit").value.trim() || item.unit;
-      item.stock = Number(document.getElementById("edit-inv-stock").value) || 0;
-      item.minStock = Number(document.getElementById("edit-inv-min").value) || 0;
-
-      save();
-      showToast("Data barang berhasil diperbarui!", "success");
-      editModal?.classList.remove("active");
-      document.body.classList.remove("modal-open");
-      renderTab();
-    }
-  });
-
-  // 4. Hapus Barang
-  document.querySelectorAll('[data-action="del-inv"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const idx = state.data.inventory.findIndex(i => i.id === id);
-      if (idx === -1) return;
-
-      const deletedItem = state.data.inventory[idx];
-      state.data.inventory.splice(idx, 1);
-      save();
-      renderTab();
-
-      showToast("Barang dihapus", "info", () => {
-        state.data.inventory.splice(idx, 0, deletedItem);
-        save();
-        renderTab();
-        showToast("Barang dikembalikan", "success");
-      });
-    });
-  });
+  document.querySelectorAll('[data-action="del-inv"]').forEach(btn => btn.addEventListener("click", () => {
+    state.data.inventory = state.data.inventory.filter(i => i.id !== btn.dataset.id);
+    save(); renderTab();
+  }));
 }
 
 function calcAge(birthDateStr) {
   if (!birthDateStr) return "—";
   const birth = new Date(birthDateStr);
   const now = new Date();
-  
   let months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
   if (now.getDate() < birth.getDate()) months--;
-
   if (months < 0) return "Belum lahir";
-  if (months === 0) {
-    const diffDays = Math.floor((now - birth) / (1000 * 60 * 60 * 24));
-    return `${diffDays} hari`;
-  }
-  if (months >= 24) {
-    const years = Math.floor(months / 12);
-    const remMonths = months % 12;
-    return `${years} thn ${remMonths} bln`;
-  }
+  if (months === 0) return `${Math.floor((now - birth) / (1000 * 60 * 60 * 24))} hari`;
+  if (months >= 24) return `${Math.floor(months / 12)} thn ${months % 12} bln`;
   return `${months} bulan`;
 }
 
-function getCustomerBookingCount(customerId, data) {
-  const txCount = (data.transactions || []).filter(t => t.customerId === customerId).length;
-  const schCount = (data.schedules || []).filter(s => s.customerId === customerId && s.status !== "Selesai").length;
-  return txCount + schCount;
-}
-
 function viewPelanggan(d) {
-  const currentMonth = new Date().getMonth() + 1;
-  const birthdayCustomers = (d.customers || []).filter(c => c.dob && (new Date(c.dob).getMonth() + 1 === currentMonth));
-
   let list = [...(d.customers || [])];
   const q = (state.custSearch || "").toLowerCase().trim();
   if (q) {
@@ -1538,22 +1107,8 @@ function viewPelanggan(d) {
   const pg = paginate(list, state.custPage, 6);
 
   return `
-    ${header("Data Pelanggan", "Kelola data ibu, bayi, tanggal lahir, riwayat kunjungan, dan lokasi")}
+    ${header("Data Pelanggan", "Kelola data ibu, bayi, tanggal lahir, dan lokasi")}
     
-    ${birthdayCustomers.length > 0 ? `
-      <div class="birthday-alert-box">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:24px;">🎂</span>
-          <div>
-            <strong style="font-size:14px;color:#856404;">Ada ${birthdayCustomers.length} Bayi Ulang Tahun Bulan Ini!</strong>
-            <div style="font-size:12px;color:#856404;margin-top:2px;">
-              ${birthdayCustomers.map(c => `<b>${esc(c.babyName || 'Bayi')}</b> (${esc(c.name)})`).join(', ')}
-            </div>
-          </div>
-        </div>
-      </div>
-    ` : ''}
-
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:12px;">
       <div style="display:flex; align-items:center; gap:8px;">
         <span style="font-weight:700; font-size:13px; color:var(--inkSoft);">🔍 CARI PELANGGAN:</span>
@@ -1566,65 +1121,45 @@ function viewPelanggan(d) {
       <table class="fx-table">
         <thead>
           <tr>
-            <th style="width: 22%;">NAMA IBU</th>
-            <th style="width: 22%;">DATA BAYI & USIA</th>
-            <th style="width: 16%;">TOTAL RESERVASI</th>
-            <th style="width: 15%;">NO. HP</th>
-            <th style="width: 15%;">ALAMAT</th>
+            <th style="width: 25%;">NAMA IBU</th>
+            <th style="width: 25%;">DATA BAYI & USIA</th>
+            <th style="width: 20%;">NO. HP</th>
+            <th style="width: 20%;">ALAMAT</th>
             <th style="width: 10%; text-align: right;">AKSI</th>
           </tr>
         </thead>
         <tbody>
-          ${pg.items.length === 0 ? '<tr class="empty-row"><td colspan="6">Belum ada data pelanggan ditemukan.</td></tr>' : ''}
-          ${pg.items.map(c => {
-            const ageStr = c.dob ? calcAge(c.dob) : (c.babyAge || "—");
-            const isBirthdayMonth = c.dob && (new Date(c.dob).getMonth() + 1 === currentMonth);
-            const ultahBadge = isBirthdayMonth ? `<span class="badge" style="background:#FFF3CD; color:#856404; font-size:10px; margin-left:4px;">🎂 Ultah Bulan Ini</span>` : '';
-            const bookingCount = getCustomerBookingCount(c.id, d);
-
-            return `<tr>
-              <td><strong>Bunda ${esc(c.name)}</strong></td>
-              <td>
-                👶 <strong>${esc(c.babyName) || "—"}</strong> ${ultahBadge}<br>
-                <small style="color:var(--inkSoft)">Usia: ${ageStr} ${c.dob ? `(${fmtDate(c.dob)})` : ''}</small>
-              </td>
-              <td>
-                <span class="badge" style="background:#E2F0D9; color:#385723; font-size:11px;">
-                  🗓️ ${bookingCount} Kali Reservasi
-                </span>
-              </td>
-              <td>${esc(c.phone) || "—"}</td>
-              <td><small>${esc(c.address) || "—"}</small></td>
-              <td style="text-align: right;">
-                <div class="action-cell-group">
-                  <button class="fx-btn fx-btn-mini" data-action="wa-reminder" data-id="${c.id}" style="background:#25D366; color:white;">💬 Sapa WA</button>
-                  <button class="fx-btn-ghost" data-action="del-cust" data-id="${c.id}">${ICONS.trash}</button>
-                </div>
-              </td>
-            </tr>`;
-          }).join("")}
+          ${pg.items.length === 0 ? '<tr class="empty-row"><td colspan="5">Belum ada data pelanggan ditemukan.</td></tr>' : ''}
+          ${pg.items.map(c => `<tr>
+            <td><strong>Bunda ${esc(c.name)}</strong></td>
+            <td>👶 <strong>${esc(c.babyName) || "—"}</strong><br><small style="color:var(--inkSoft)">Usia: ${calcAge(c.dob)}</small></td>
+            <td>${esc(c.phone) || "—"}</td>
+            <td><small>${esc(c.address) || "—"}</small></td>
+            <td style="text-align: right;">
+              <button class="fx-btn-ghost" data-action="del-cust" data-id="${c.id}">${ICONS.trash}</button>
+            </td>
+          </tr>`).join("")}
         </tbody>
       </table>
       ${pg.renderControls('cust')}
     </div>
 
+    <!-- POPUP MODAL TAMBAH PELANGGAN -->
     <div class="modal-overlay" id="cust-modal">
-      <div class="modal-container">
-        <div class="modal-header">
-          <h3 class="modal-title">➕ Tambah Pelanggan Baru</h3>
-          <button class="modal-close-btn" id="close-cust-modal">✕</button>
+      <div class="modal-container" style="max-width:450px; background:white; padding:20px; border-radius:12px; margin:auto;">
+        <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3 class="modal-title" style="margin:0;">➕ Tambah Pelanggan Baru</h3>
+          <button class="modal-close-btn" id="close-cust-modal" style="background:none; border:none; font-size:18px; cursor:pointer;">✕</button>
         </div>
-        <div class="modal-body">
-          <div class="field"><span class="field-label">Nama Ibu</span><input class="fx-input" id="cust-name" placeholder="mis. Bunda Yanti"></div>
-          <div class="modal-form-row">
-            <div class="field"><span class="field-label">Nama Bayi</span><input class="fx-input" id="cust-baby" placeholder="mis. Yanto"></div>
-            <div class="field"><span class="field-label">Tgl Lahir Bayi</span><input class="fx-input" type="date" id="cust-dob"></div>
+        <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+          <div class="field"><label class="field-label">Nama Ibu</label><input class="fx-input" id="cust-name" placeholder="mis. Bunda Yanti"></div>
+          <div class="modal-form-row" style="display:flex; gap:10px;">
+            <div class="field" style="flex:1;"><label class="field-label">Nama Bayi</label><input class="fx-input" id="cust-baby" placeholder="mis. Yanto"></div>
+            <div class="field" style="flex:1;"><label class="field-label">Tgl Lahir Bayi</label><input class="fx-input" type="date" id="cust-dob"></div>
           </div>
-          <div class="field"><span class="field-label">No. HP (WhatsApp)</span><input class="fx-input" id="cust-phone" placeholder="08123456789"></div>
-          <div class="field"><span class="field-label">Alamat Lengkap</span><input class="fx-input" id="cust-address" placeholder="Jl. Mawar No. 12 / Perum Indah Blok A"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="fx-btn fx-btn-submit" id="cust-add">${ICONS.plus} Simpan Data Pelanggan</button>
+          <div class="field"><label class="field-label">No. HP (WhatsApp)</label><input class="fx-input" id="cust-phone" placeholder="08123456789"></div>
+          <div class="field"><label class="field-label">Alamat Lengkap</label><input class="fx-input" id="cust-address" placeholder="Jl. Mawar No. 12"></div>
+          <button class="fx-btn fx-btn-submit" id="cust-add" style="margin-top:10px; padding:12px; width:100%;">${ICONS.plus} Simpan Data Pelanggan</button>
         </div>
       </div>
     </div>`;
@@ -1640,7 +1175,6 @@ function bindPelanggan() {
 
   openBtn?.addEventListener("click", showModal);
   closeBtn?.addEventListener("click", hideModal);
-  modal?.addEventListener("click", (e) => { if (e.target === modal) hideModal(); });
 
   const searchInput = document.getElementById("cust-search-input");
   searchInput?.addEventListener("input", (e) => {
@@ -1649,50 +1183,38 @@ function bindPelanggan() {
     renderTab();
   });
 
+  // TANGKAP TOMBOL SIMPAN PELANGGAN
   document.getElementById("cust-add")?.addEventListener("click", () => {
-    const name = document.getElementById("cust-name").value.trim();
-    if (!name) return showToast("Isi Nama Ibu!", "error");
+    const nameEl = document.getElementById("cust-name");
+    const babyEl = document.getElementById("cust-baby");
+    const dobEl = document.getElementById("cust-dob");
+    const phoneEl = document.getElementById("cust-phone");
+    const addrEl = document.getElementById("cust-address");
+
+    const name = nameEl ? nameEl.value.trim() : "";
+    if (!name) return showToast("Mohon isi Nama Ibu!", "error");
 
     if (!state.data.customers) state.data.customers = [];
+
     state.data.customers.unshift({
       id: uid(),
-      name,
-      babyName: document.getElementById("cust-baby").value.trim(),
-      dob: document.getElementById("cust-dob").value,
-      phone: document.getElementById("cust-phone").value.trim(),
-      address: document.getElementById("cust-address").value.trim()
+      name: name,
+      babyName: babyEl ? babyEl.value.trim() : "",
+      dob: dobEl ? dobEl.value : "",
+      phone: phoneEl ? phoneEl.value.trim() : "",
+      address: addrEl ? addrEl.value.trim() : ""
     });
 
-    save(); showToast("Pelanggan berhasil ditambahkan", "success"); hideModal(); renderTab();
+    save();
+    showToast("Pelanggan berhasil ditambahkan!", "success");
+    hideModal();
+    renderTab();
   });
 
   document.querySelectorAll('[data-action="del-cust"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.customers.findIndex(c => c.id === id);
-    if (idx === -1) return;
-
-    const deletedItem = state.data.customers[idx];
-    state.data.customers.splice(idx, 1);
-    save();
-    renderTab();
-
-    showToast("Pelanggan dihapus", "info", () => {
-      state.data.customers.splice(idx, 0, deletedItem);
-      save();
-      renderTab();
-      showToast("Data pelanggan dikembalikan", "success");
-    });
-  }));
-
-  document.querySelectorAll('[data-action="wa-reminder"]').forEach(btn => btn.addEventListener("click", () => {
-    const cust = state.data.customers.find(c => c.id === btn.dataset.id);
-    if (!cust || !cust.phone) return showToast("Nomor HP belum terdaftar!", "error");
-    let phoneStr = String(cust.phone).replace(/\D/g, "");
-    if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
-
-    const ageStr = cust.dob ? calcAge(cust.dob) : 'bayi';
-    const pesan = `Halo Bunda ${cust.name}! \nBagaimana kabar adek ${cust.babyName || 'si kecil'}? (Usia ${ageStr})\nSudah waktunya perawatan di *Ulfa Baby Spa* nih, Bunda! `;
-    window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
+    if (!confirm("Hapus data pelanggan?")) return;
+    state.data.customers = state.data.customers.filter(c => c.id !== btn.dataset.id);
+    save(); renderTab();
   }));
 
   document.querySelectorAll('[data-page-action="cust"]').forEach(btn => btn.addEventListener("click", () => {
@@ -1700,6 +1222,9 @@ function bindPelanggan() {
   }));
 }
 
+/* ==========================================================================
+   10. MODULE: KEUANGAN & STAF
+   ========================================================================== */
 function viewKeuangan(d) {
   const totalRevenue = (d.transactions || []).reduce((s, t) => s + t.amount, 0);
   const totalExpense = (d.expenses || []).reduce((s, e) => s + e.amount, 0);
@@ -1715,7 +1240,7 @@ function viewKeuangan(d) {
     <div class="fx-card">
       <div class="form-grid">
         <div class="field"><span class="field-label">Tanggal</span><input class="fx-input" type="date" id="exp-date" value="${todayISO()}"></div>
-        <div class="field"><span class="field-label">Kategori</span><select class="fx-input" id="exp-category"><option>Operasional</option><option>Marketing</option><option>Akomodasi</option><option>Gaji</option><option>Lainnya</option></select></div>
+        <div class="field"><span class="field-label">Kategori</span><select class="fx-input" id="exp-category"><option>Operasional</option><option>Marketing</option><option>Gaji</option><option>Lainnya</option></select></div>
         <div class="field"><span class="field-label">Jumlah (Rp)</span><input class="fx-input" type="number" id="exp-amount"></div>
         <div class="field"><span class="field-label">Catatan</span><input class="fx-input" id="exp-note"></div>
         <button class="fx-btn" id="exp-add">${ICONS.plus} Tambah</button>
@@ -1758,21 +1283,8 @@ function bindKeuangan() {
   });
 
   document.querySelectorAll('[data-action="del-exp"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.expenses.findIndex(e => e.id === id);
-    if (idx === -1) return;
-
-    const deletedItem = state.data.expenses[idx];
-    state.data.expenses.splice(idx, 1);
-    save();
-    renderTab();
-
-    showToast("Pengeluaran dihapus", "info", () => {
-      state.data.expenses.splice(idx, 0, deletedItem);
-      save();
-      renderTab();
-      showToast("Catatan pengeluaran dikembalikan", "success");
-    });
+    state.data.expenses = state.data.expenses.filter(e => e.id !== btn.dataset.id);
+    save(); renderTab();
   }));
 
   document.querySelectorAll('[data-page-action="exp"]').forEach(btn => btn.addEventListener("click", () => {
@@ -1786,7 +1298,7 @@ function viewStaf(d) {
     <div class="fx-card">
       <div class="form-grid">
         <div class="field"><span class="field-label">Nama</span><input class="fx-input" id="staf-name"></div>
-        <div class="field"><span class="field-label">Peran</span><select class="fx-input" id="staf-role"><option>Owner</option><option>Marketing</option><option>Terapis Bayi</option><option>Terapis Ibu</option></select></div>
+        <div class="field"><span class="field-label">Peran</span><select class="fx-input" id="staf-role"><option>Owner</option><option>Terapis Bayi</option><option>Terapis Ibu</option></select></div>
         <div class="field"><span class="field-label">No. HP</span><input class="fx-input" id="staf-phone"></div>
         <button class="fx-btn" id="staf-add">${ICONS.plus} Tambah</button>
       </div>
@@ -1825,26 +1337,13 @@ function bindStaf() {
   });
 
   document.querySelectorAll('[data-action="del-staf"]').forEach(btn => btn.addEventListener("click", () => {
-    const id = btn.dataset.id;
-    const idx = state.data.staff.findIndex(s => s.id === id);
-    if (idx === -1) return;
-
-    const deletedItem = state.data.staff[idx];
-    state.data.staff.splice(idx, 1);
-    save();
-    renderTab();
-
-    showToast("Data staf dihapus", "info", () => {
-      state.data.staff.splice(idx, 0, deletedItem);
-      save();
-      renderTab();
-      showToast("Data staf dikembalikan", "success");
-    });
+    state.data.staff = state.data.staff.filter(s => s.id !== btn.dataset.id);
+    save(); renderTab();
   }));
 }
 
 /* ==========================================================================
-   10. INITIALIZATION & PRINT RECEIPT
+   11. INITIALIZATION & PRINT RECEIPT
    ========================================================================== */
 document.addEventListener("DOMContentLoaded", () => {
   initApp();
@@ -1879,60 +1378,21 @@ function printReceipt(txId) {
   const printArea = document.getElementById("print-area");
   if (!printArea) return;
 
-  const babyInfo = (cust && cust.babyName && cust.babyName !== "-") ? cust.babyName : "-";
-  const noteText = tx.note ? ` (${tx.note})` : ' Pembayaran';
-
   printArea.innerHTML = `
-    <div class="receipt-box">
-      <div class="receipt-header">
-        <h2 class="receipt-title">ULFA BABY SPA</h2>
-        <p class="receipt-sub">Layanan Spa Bayi, Anak & Ibu</p>
-        <p class="receipt-contact">WhatsApp: 0812-1111-2222</p>
+    <div class="receipt-box" style="padding:20px; font-family:sans-serif;">
+      <div style="text-align:center; border-bottom:1px dashed #ccc; padding-bottom:10px;">
+        <h2 style="margin:0;">ULFA BABY SPA</h2>
+        <p style="margin:4px 0; font-size:12px;">Layanan Spa Bayi & Ibu</p>
       </div>
-
-      <div class="receipt-divider"></div>
-
-      <table class="receipt-info-table">
-        <tr><td>No. Nota</td><td class="text-right">#${tx.id.toUpperCase()}</td></tr>
-        <tr><td>Tanggal</td><td class="text-right">${fmtDate(tx.date)}</td></tr>
-        <tr><td>Tipe</td><td class="text-right">${tx.type || 'Studio'}</td></tr>
-        <tr><td>Pelanggan</td><td class="text-right">Bunda ${esc(cust ? cust.name : '-')}</td></tr>
-        <tr><td>Nama Bayi</td><td class="text-right">${esc(babyInfo)}</td></tr>
-        <tr><td>Terapis</td><td class="text-right">${esc(stf ? stf.name : '-')}</td></tr>
-      </table>
-
-      <div class="receipt-divider"></div>
-
-      <table class="receipt-item-table">
-        <thead>
-          <tr>
-            <th class="text-left">Keterangan Layanan</th>
-            <th class="text-right">Jumlah</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <strong>${esc(svc ? svc.name : 'Layanan Spa')}</strong><br>
-              <small style="color:#666">${esc(noteText)}</small>
-            </td>
-            <td class="text-right font-bold">${fmtIDR(tx.amount)}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="receipt-divider"></div>
-
-      <div class="receipt-total-row">
+      <div style="margin:10px 0; font-size:12px;">
+        <div>Tanggal: ${fmtDate(tx.date)}</div>
+        <div>Pelanggan: Bunda ${esc(cust ? cust.name : '-')}</div>
+        <div>Layanan: ${esc(svc ? svc.name : '-')}</div>
+        <div>Terapis: ${esc(stf ? stf.name : '-')}</div>
+      </div>
+      <div style="border-top:1px dashed #ccc; border-bottom:1px dashed #ccc; padding:10px 0; display:flex; justify-content:space-between; font-weight:bold;">
         <span>TOTAL DIBAYAR</span>
         <span>${fmtIDR(tx.amount)}</span>
-      </div>
-
-      <div class="receipt-status-tag">${esc(tx.note ? tx.note.toUpperCase() : 'LUNAS')}</div>
-
-      <div class="receipt-footer">
-        <p>Terima kasih telah mempercayakan<br>perawatan di <strong>Ulfa Baby Spa</strong> 💖</p>
-        <small>Semoga si kecil sehat & ceria selalu!</small>
       </div>
     </div>
   `;
