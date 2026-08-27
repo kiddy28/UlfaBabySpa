@@ -440,11 +440,11 @@ function viewRingkasan(d) {
       </div>
     </div>` : ""}
 
-    <!-- KONTAINER GRAFIK DASHBOARD -->
+    <!-- KONTAINER GRAFIK LINE CHART -->
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:16px;">
       <div class="fx-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:15px; margin:0; color:var(--ink);">📊 Perbandingan Keuangan</h3>
+          <h3 style="font-size:15px; margin:0; color:var(--ink);">📈 Tren Keuangan</h3>
           <small style="color:var(--inkSoft);">Pendapatan vs Pengeluaran</small>
         </div>
         <div style="position:relative; width:100%; height:220px;">
@@ -454,11 +454,11 @@ function viewRingkasan(d) {
 
       <div class="fx-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:15px; margin:0; color:var(--ink);">🌟 Layanan Populer</h3>
-          <small style="color:var(--inkSoft);">Berdasarkan transaksi</small>
+          <h3 style="font-size:15px; margin:0; color:var(--ink);">📉 Tren Layanan Terlaris</h3>
+          <small style="color:var(--inkSoft);">Frekuensi Permintaan Layanan</small>
         </div>
-        <div style="position:relative; width:100%; height:220px; display:flex; justify-content:center; align-items:center;">
-          <canvas id="chart-services" style="max-height:200px;"></canvas>
+        <div style="position:relative; width:100%; height:220px;">
+          <canvas id="chart-services" style="width:100%; height:100%;"></canvas>
         </div>
       </div>
     </div>
@@ -470,7 +470,9 @@ function bindRingkasan() {}
 /* FUNGSI RENDER GRAFIK DENGAN CANVAS HTML5 MURNI */
 function initCharts(d) {
   setTimeout(() => {
-    // 1. GRAFIK KEUANGAN (BAR CHART)
+    // -------------------------------------------------------------
+    // 1. GRAFIK GARIS KEUANGAN (PENDAPATAN VS PENGELUARAN)
+    // -------------------------------------------------------------
     const canvasFin = document.getElementById("chart-finance");
     if (canvasFin) {
       const ctx = canvasFin.getContext("2d");
@@ -480,45 +482,86 @@ function initCharts(d) {
       canvasFin.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
 
-      const totalRevenue = (d.transactions || []).reduce((s, t) => s + (t.amount || 0), 0);
-      const totalExpense = (d.expenses || []).reduce((s, e) => s + (e.amount || 0), 0);
-
-      const maxVal = Math.max(totalRevenue, totalExpense, 100000);
       const width = rect.width;
-      const height = rect.height - 30;
+      const height = rect.height;
+      const padding = { top: 30, bottom: 35, left: 20, right: 20 };
 
-      ctx.clearRect(0, 0, width, rect.height);
+      // Kelompokkan data transaksi & pengeluaran berdasarkan tanggal
+      const dateMap = {};
+      (d.transactions || []).forEach(t => {
+        if (!dateMap[t.date]) dateMap[t.date] = { rev: 0, exp: 0 };
+        dateMap[t.date].rev += (t.amount || 0);
+      });
+      (d.expenses || []).forEach(e => {
+        if (!dateMap[e.date]) dateMap[e.date] = { rev: 0, exp: 0 };
+        dateMap[e.date].exp += (e.amount || 0);
+      });
 
-      // Digambar 2 batang
-      const barWidth = Math.min(60, width / 4);
-      const gap = 40;
-      const startX = (width - (barWidth * 2 + gap)) / 2;
+      let dates = Object.keys(dateMap).sort();
+      if (dates.length < 2) {
+        dates = [todayISO(), todayISO()];
+        if (!dateMap[todayISO()]) dateMap[todayISO()] = { rev: 0, exp: 0 };
+      }
 
-      // Batang Pendapatan
-      const revHeight = (totalRevenue / maxVal) * (height - 40);
-      ctx.fillStyle = "#A3B18A";
+      const revData = dates.map(date => dateMap[date].rev);
+      const expData = dates.map(date => dateMap[date].exp);
+      const maxVal = Math.max(...revData, ...expData, 100000);
+
+      ctx.clearRect(0, 0, width, height);
+
+      // Garis Acuan Grid (Dotted)
+      ctx.strokeStyle = "#E2E8F0";
+      ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.roundRect(startX, height - revHeight, barWidth, revHeight, [6, 6, 0, 0]);
-      ctx.fill();
+      ctx.moveTo(padding.left, height / 2);
+      ctx.lineTo(width - padding.right, height / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-      ctx.fillStyle = "#2B2D42";
-      ctx.font = "bold 11px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(fmtIDR(totalRevenue), startX + barWidth / 2, height - revHeight - 8);
-      ctx.fillText("Pendapatan", startX + barWidth / 2, height + 18);
+      const getX = (i) => padding.left + (i * (width - padding.left - padding.right) / (dates.length - 1 || 1));
+      const getY = (val) => height - padding.bottom - (val / maxVal * (height - padding.top - padding.bottom));
 
-      // Batang Pengeluaran
-      const expHeight = (totalExpense / maxVal) * (height - 40);
-      ctx.fillStyle = "#E85D88";
+      // Menggambar Line Chart Pendapatan (Hijau/Sage)
       ctx.beginPath();
-      ctx.roundRect(startX + barWidth + gap, height - expHeight, barWidth, expHeight, [6, 6, 0, 0]);
-      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "#A3B18A";
+      revData.forEach((val, i) => {
+        const x = getX(i);
+        const y = getY(val);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
 
-      ctx.fillText(fmtIDR(totalExpense), startX + barWidth + gap + barWidth / 2, height - expHeight - 8);
-      ctx.fillText("Pengeluaran", startX + barWidth + gap + barWidth / 2, height + 18);
+      // Titik Point Pendapatan
+      revData.forEach((val, i) => {
+        const x = getX(i);
+        const y = getY(val);
+        ctx.fillStyle = "#A3B18A";
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(x, y, 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label Nilai
+        ctx.fillStyle = "#2B2D42";
+        ctx.font = "bold 10px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(fmtIDR(val), x, y - 10);
+
+        // Label Tanggal
+        ctx.fillStyle = "#8D99AE";
+        ctx.font = "10px sans-serif";
+        ctx.fillText(dates[i].slice(5), x, height - 10);
+      });
     }
 
-    // 2. GRAFIK LAYANAN POPULER (DONUT CHART)
+    // -------------------------------------------------------------
+    // 2. GRAFIK GARIS LAYANAN TERLARIS (PERMINTAAN TREN)
+    // -------------------------------------------------------------
     const canvasSvc = document.getElementById("chart-services");
     if (canvasSvc) {
       const ctx = canvasSvc.getContext("2d");
@@ -528,6 +571,10 @@ function initCharts(d) {
       canvasSvc.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
 
+      const width = rect.width;
+      const height = rect.height;
+      const padding = { top: 30, bottom: 35, left: 30, right: 30 };
+
       const svcCounts = {};
       (d.transactions || []).forEach(t => {
         const svc = (d.services || []).find(s => s.id === t.serviceId);
@@ -536,48 +583,66 @@ function initCharts(d) {
       });
 
       const labels = Object.keys(svcCounts);
-      const data = Object.values(svcCounts);
-      const total = data.reduce((a, b) => a + b, 0);
+      const dataValues = Object.values(svcCounts);
 
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const radius = Math.min(centerX, centerY) - 20;
-
-      ctx.clearRect(0, 0, rect.width, rect.height);
-
-      if (total === 0) {
-        ctx.fillStyle = "#8D99AE";
-        ctx.font = "12px sans-serif";
-        ctx.textAlign = "center";
-        ctx.fillText("Belum ada data transaksi", centerX, centerY);
-        return;
+      if (labels.length === 0) {
+        labels.push("Belum Ada Layanan");
+        dataValues.push(0);
       }
 
-      let startAngle = 0;
-      data.forEach((val, i) => {
-        const sliceAngle = (val / total) * 2 * Math.PI;
-        ctx.fillStyle = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
-        ctx.beginPath();
-        ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
-        ctx.closePath();
-        ctx.fill();
-        startAngle += sliceAngle;
-      });
+      const maxSvcVal = Math.max(...dataValues, 5);
 
-      // Lubang Donut
-      ctx.fillStyle = "#FFFFFF";
+      ctx.clearRect(0, 0, width, height);
+
+      // Garis Acuan Grid (Dotted)
+      ctx.strokeStyle = "#E2E8F0";
+      ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 0.55, 0, 2 * Math.PI);
-      ctx.fill();
+      ctx.moveTo(padding.left, height / 2);
+      ctx.lineTo(width - padding.right, height / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
-      // Teks Tengah
-      ctx.fillStyle = "#2B2D42";
-      ctx.font = "bold 14px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText(`${total}`, centerX, centerY + 2);
-      ctx.font = "10px sans-serif";
-      ctx.fillText("Transaksi", centerX, centerY + 16);
+      const getX = (i) => padding.left + (i * (width - padding.left - padding.right) / (labels.length - 1 || 1));
+      const getY = (val) => height - padding.bottom - (val / maxSvcVal * (height - padding.top - padding.bottom));
+
+      // Menggambar Line Chart Layanan (Merah Muda/Pink Accent)
+      ctx.beginPath();
+      ctx.lineWidth = 3.5;
+      ctx.strokeStyle = "#E85D88";
+      dataValues.forEach((val, i) => {
+        const x = getX(i);
+        const y = getY(val);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Titik Point & Label Layanan
+      dataValues.forEach((val, i) => {
+        const x = getX(i);
+        const y = getY(val);
+
+        ctx.fillStyle = "#E85D88";
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(x, y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label Jumlah Transaksi
+        ctx.fillStyle = "#4A1E2B";
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`${val}x`, x, y - 10);
+
+        // Label Nama Layanan
+        ctx.fillStyle = "#2B2D42";
+        ctx.font = "10px sans-serif";
+        ctx.fillText(labels[i], x, height - 10);
+      });
     }
   }, 100);
 }
@@ -833,7 +898,7 @@ function bindJadwal() {
     let phoneStr = String(cust.phone).replace(/\D/g, "");
     if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
 
-    const pesan = `Halo Bunda ${cust.name}! 👋😊\nKami konfirmasi jadwal spa tanggal ${fmtDate(sch.date)} jam ${sch.time} WIB ya. Terima kasih! 💖`;
+    const pesan = `Halo Bunda ${cust.name}! \nKami konfirmasi jadwal spa tanggal ${fmtDate(sch.date)} jam ${sch.time} WIB ya. Terima kasih! `;
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(pesan)}`, "_blank");
   }));
 
@@ -944,7 +1009,7 @@ function bindTransaksi() {
     if (phoneStr.startsWith("0")) phoneStr = "62" + phoneStr.slice(1);
 
     const statusTxt = tx.isDp ? `pembayaran Uang Muka (DP) sebesar *${fmtIDR(tx.amount)}*` : `pembayaran *LUNAS* sebesar *${fmtIDR(tx.amount)}*`;
-    const msg = `Terima kasih Bunda ${cust.name}! 💖\n\nKami telah menerima ${statusTxt} untuk perawatan *${svc ? svc.name : 'Baby Spa'}*.\n\nSemoga si kecil sehat dan ceria selalu ya, Bunda! Ditunggu kedatangannya kembali di Ulfa Baby Spa. ✨👶`;
+    const msg = `Terima kasih Bunda ${cust.name}! \n\nKami telah menerima ${statusTxt} untuk perawatan *${svc ? svc.name : 'Baby Spa'}*.\n\nSemoga si kecil sehat dan ceria selalu ya, Bunda! Ditunggu kedatangannya kembali di Ulfa Baby Spa. `;
 
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(msg)}`, "_blank");
   }));
