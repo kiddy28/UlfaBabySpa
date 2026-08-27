@@ -412,7 +412,7 @@ function kpiCard(label, value, iconKey, tint) {
 }
 
 /* ==========================================================================
-   5. MODULE RINGKASAN
+   5. MODULE RINGKASAN & GRAFIK INTERAKTIF
    ========================================================================== */
 function viewRingkasan(d) {
   const totalRevenue = (d.transactions || []).reduce((s, t) => s + (t.amount || 0), 0);
@@ -440,14 +440,147 @@ function viewRingkasan(d) {
       </div>
     </div>` : ""}
 
-    <div class="charts-row">
-      <div class="fx-card"><div class="card-title">Status Operasional</div><p style="font-size:13.5px; color:var(--inkSoft);">Semua fitur sistem terhubung dan berfungsi normal.</p></div>
+    <!-- KONTAINER GRAFIK DASHBOARD -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:16px;">
+      <div class="fx-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:15px; margin:0; color:var(--ink);">📊 Perbandingan Keuangan</h3>
+          <small style="color:var(--inkSoft);">Pendapatan vs Pengeluaran</small>
+        </div>
+        <div style="position:relative; width:100%; height:220px;">
+          <canvas id="chart-finance" style="width:100%; height:100%;"></canvas>
+        </div>
+      </div>
+
+      <div class="fx-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:15px; margin:0; color:var(--ink);">🌟 Layanan Populer</h3>
+          <small style="color:var(--inkSoft);">Berdasarkan transaksi</small>
+        </div>
+        <div style="position:relative; width:100%; height:220px; display:flex; justify-content:center; align-items:center;">
+          <canvas id="chart-services" style="max-height:200px;"></canvas>
+        </div>
+      </div>
     </div>
   `;
 }
 
 function bindRingkasan() {}
-function initCharts(d) {}
+
+/* FUNGSI RENDER GRAFIK DENGAN CANVAS HTML5 MURNI */
+function initCharts(d) {
+  setTimeout(() => {
+    // 1. GRAFIK KEUANGAN (BAR CHART)
+    const canvasFin = document.getElementById("chart-finance");
+    if (canvasFin) {
+      const ctx = canvasFin.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvasFin.getBoundingClientRect();
+      canvasFin.width = rect.width * dpr;
+      canvasFin.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const totalRevenue = (d.transactions || []).reduce((s, t) => s + (t.amount || 0), 0);
+      const totalExpense = (d.expenses || []).reduce((s, e) => s + (e.amount || 0), 0);
+
+      const maxVal = Math.max(totalRevenue, totalExpense, 100000);
+      const width = rect.width;
+      const height = rect.height - 30;
+
+      ctx.clearRect(0, 0, width, rect.height);
+
+      // Digambar 2 batang
+      const barWidth = Math.min(60, width / 4);
+      const gap = 40;
+      const startX = (width - (barWidth * 2 + gap)) / 2;
+
+      // Batang Pendapatan
+      const revHeight = (totalRevenue / maxVal) * (height - 40);
+      ctx.fillStyle = "#A3B18A";
+      ctx.beginPath();
+      ctx.roundRect(startX, height - revHeight, barWidth, revHeight, [6, 6, 0, 0]);
+      ctx.fill();
+
+      ctx.fillStyle = "#2B2D42";
+      ctx.font = "bold 11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(fmtIDR(totalRevenue), startX + barWidth / 2, height - revHeight - 8);
+      ctx.fillText("Pendapatan", startX + barWidth / 2, height + 18);
+
+      // Batang Pengeluaran
+      const expHeight = (totalExpense / maxVal) * (height - 40);
+      ctx.fillStyle = "#E85D88";
+      ctx.beginPath();
+      ctx.roundRect(startX + barWidth + gap, height - expHeight, barWidth, expHeight, [6, 6, 0, 0]);
+      ctx.fill();
+
+      ctx.fillText(fmtIDR(totalExpense), startX + barWidth + gap + barWidth / 2, height - expHeight - 8);
+      ctx.fillText("Pengeluaran", startX + barWidth + gap + barWidth / 2, height + 18);
+    }
+
+    // 2. GRAFIK LAYANAN POPULER (DONUT CHART)
+    const canvasSvc = document.getElementById("chart-services");
+    if (canvasSvc) {
+      const ctx = canvasSvc.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvasSvc.getBoundingClientRect();
+      canvasSvc.width = rect.width * dpr;
+      canvasSvc.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const svcCounts = {};
+      (d.transactions || []).forEach(t => {
+        const svc = (d.services || []).find(s => s.id === t.serviceId);
+        const name = svc ? svc.name : "Lainnya";
+        svcCounts[name] = (svcCounts[name] || 0) + 1;
+      });
+
+      const labels = Object.keys(svcCounts);
+      const data = Object.values(svcCounts);
+      const total = data.reduce((a, b) => a + b, 0);
+
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      const radius = Math.min(centerX, centerY) - 20;
+
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      if (total === 0) {
+        ctx.fillStyle = "#8D99AE";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("Belum ada data transaksi", centerX, centerY);
+        return;
+      }
+
+      let startAngle = 0;
+      data.forEach((val, i) => {
+        const sliceAngle = (val / total) * 2 * Math.PI;
+        ctx.fillStyle = CATEGORY_COLORS[i % CATEGORY_COLORS.length];
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fill();
+        startAngle += sliceAngle;
+      });
+
+      // Lubang Donut
+      ctx.fillStyle = "#FFFFFF";
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius * 0.55, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Teks Tengah
+      ctx.fillStyle = "#2B2D42";
+      ctx.font = "bold 14px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(`${total}`, centerX, centerY + 2);
+      ctx.font = "10px sans-serif";
+      ctx.fillText("Transaksi", centerX, centerY + 16);
+    }
+  }, 100);
+}
 
 /* ==========================================================================
    6. MODULE: JADWAL & BOOKING
@@ -883,7 +1016,7 @@ function printReceipt(txId) {
 }
 
 /* ==========================================================================
-   8. MODULE: LAYANAN (FIXED MEMUAT UTUH TANPA STUCK)
+   8. MODULE: LAYANAN
    ========================================================================== */
 function viewLayanan(d) {
   return `
@@ -930,7 +1063,7 @@ function bindLayanan() {
 }
 
 /* ==========================================================================
-   9. MODULE: STOK (LENGKAP MINIMAL STOK & KONTROL PLUS MINUS)
+   9. MODULE: STOK
    ========================================================================== */
 function viewStok(d) {
   return `
@@ -997,7 +1130,7 @@ function bindStok() {
 }
 
 /* ==========================================================================
-   10. MODULE: PELANGGAN (PENANDA TERAKHIR ORDER & CHAT PENGINGAT WA)
+   10. MODULE: PELANGGAN
    ========================================================================== */
 function viewPelanggan(d) {
   return `
@@ -1080,7 +1213,6 @@ function bindPelanggan() {
     save(); showToast("Pelanggan Tersimpan!", "success"); modal?.classList.remove("active"); renderTab();
   });
 
-  // CHAT WA PENGINGAT PERAWATAN BERKALA
   document.querySelectorAll('[data-action="remind-wa"]').forEach(btn => btn.addEventListener("click", () => {
     const cust = (state.data.customers || []).find(c => c.id === btn.dataset.id);
     if (!cust || !cust.phone) return showToast("Nomor HP pelanggan tidak ditemukan!", "error");
@@ -1097,7 +1229,6 @@ function bindPelanggan() {
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(msg)}`, "_blank");
   }));
 
-  // DETAIL PELANGGAN
   document.querySelectorAll('[data-action="view-cust-detail"]').forEach(btn => btn.addEventListener("click", () => {
     const cust = (state.data.customers || []).find(c => c.id === btn.dataset.id);
     if (!cust) return;
@@ -1140,7 +1271,7 @@ function bindPelanggan() {
 }
 
 /* ==========================================================================
-   11. MODULE: KEUANGAN & STAF (PERAN DROPDOWN FIX)
+   11. MODULE: KEUANGAN & STAF
    ========================================================================== */
 function viewKeuangan(d) {
   return `
