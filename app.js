@@ -28,7 +28,7 @@ const ICONS = {
 };
 
 const USERS = [
-  { username: "admin", password: "Londoireng2026", name: "Ulfa (Owner)", role: "owner" },
+  { username: "admin", password: "04092000", name: "Ulfa (Owner)", role: "owner" },
   { username: "user", password: "user123", name: "user 1", role: "user" }
 ];
 
