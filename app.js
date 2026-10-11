@@ -1446,134 +1446,59 @@ let filteredData = [...customers];
 let currentPage = 1;
 const rowsPerPage = 5;
 
-// Render Data Tabel
-function renderTable() {
-  const tbody = document.getElementById('customerTableBody');
-  tbody.innerHTML = '';
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pelanggan — Ulfa Baby Spa</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body data-page="pelanggan">
 
-  const start = (currentPage - 1) * rowsPerPage;
-  const end = start + rowsPerPage;
-  const paginatedData = filteredData.slice(start, end);
+  <div id="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <img src="icon.png" alt="Logo Ulfa Baby Spa" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.style.display='none';this.parentElement.innerHTML='👶';">
+        </div>
+        <div class="brand-text">
+          <div class="brand-title fx-display">Dashboard</div>
+          <div class="brand-sub">ULFA BABY SPA</div>
+        </div>
+      </div>
 
-  if (paginatedData.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Data tidak ditemukan.</td></tr>`;
-    updatePaginationInfo(0);
-    return;
-  }
+      <nav class="navlist">
+        <a href="index.html" class="navbtn">📊 <span>Ringkasan</span></a>
+        <a href="jadwal.html" class="navbtn">📅 <span>Jadwal Booking</span></a>
+        <a href="transaksi.html" class="navbtn">🧾 <span>Transaksi</span></a>
+        <a href="layanan.html" class="navbtn">✨ <span>Layanan & Paket</span></a>
+        <a href="stok.html" class="navbtn">📦 <span>Stok</span></a>
+        <a href="pelanggan.html" class="navbtn active">👥 <span>Pelanggan</span></a>
+        <a href="keuangan.html" class="navbtn">👛 <span>Keuangan</span></a>
+        <a href="staf.html" class="navbtn">👩‍⚕️ <span>Staf</span></a>
+      </nav>
 
-  paginatedData.forEach(c => {
-    const tr = document.createElement('tr');
-    tr.onclick = (e) => {
-      // Mencegah drawer terbuka saat tombol edit diklik
-      if (!e.target.classList.contains('btn-edit')) {
-        openDrawer(c);
-      }
-    };
+      <div class="footer-note">
+        Tersimpan di perangkat ini.<br><br>
+        <button class="fx-btn fx-btn-mini" onclick="exportToExcel()" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; background:#217346; color:white; border:none;">📊 Export ke Excel</button>
+        <label class="fx-btn fx-btn-mini" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; cursor:pointer; background:var(--sage); color:white;">
+          📥 Import Excel / JSON
+          <input type="file" accept=".xlsx,.xls,.csv,.json" style="display:none;" onchange="importDataFile(event)">
+        </label>
+        <button class="fx-btn fx-btn-mini" onclick="backupData()" style="width:100%; display:flex; justify-content:center; background:var(--line); color:var(--ink); border:none;">💾 Backup JSON</button>
+      </div>
+    </aside>
 
-    tr.innerHTML = `
-      <td>${c.id}</td>
-      <td><strong>${c.nama}</strong></td>
-      <td>${c.hp}</td>
-      <td>${c.email}</td>
-      <td>${getStatusBadge(c.status)}</td>
-      <td>
-        <button class="btn-action btn-edit" onclick="openEditModal('${c.id}')">Edit</button>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+    <main id="main"></main>
+  </div>
 
-  updatePaginationInfo(filteredData.length);
-}
+  <div id="toast-container"></div>
+  <div id="print-area"></div>
 
-// Badge Status Helper
-function getStatusBadge(status) {
-  if (status === 'Aktif') return `<span class="badge badge-aktif">Aktif</span>`;
-  if (status === 'VIP') return `<span class="badge badge-vip">VIP</span>`;
-  return `<span class="badge badge-nonaktif">Non-aktif</span>`;
-}
-
-// Search & Filter Real-time
-function handleFilter() {
-  const keyword = document.getElementById('searchInput').value.toLowerCase();
-  const status = document.getElementById('statusFilter').value;
-
-  filteredData = customers.filter(c => {
-    const matchSearch = c.nama.toLowerCase().includes(keyword) ||
-                        c.hp.includes(keyword) ||
-                        c.email.toLowerCase().includes(keyword);
-    const matchStatus = status === '' || c.status === status;
-    return matchSearch && matchStatus;
-  });
-
-  currentPage = 1;
-  renderTable();
-}
-
-// Pagination Controls
-function updatePaginationInfo(totalItems) {
-  const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
-  document.getElementById('pageInfo').innerText = `Halaman ${currentPage} dari ${totalPages}`;
-  document.getElementById('prevBtn').disabled = currentPage === 1;
-  document.getElementById('nextBtn').disabled = currentPage >= totalPages;
-}
-
-function changePage(direction) {
-  currentPage += direction;
-  renderTable();
-}
-
-// Drawer Slide-Over Controls
-function openDrawer(customer) {
-  document.getElementById('detailId').innerText = customer.id;
-  document.getElementById('detailNama').innerText = customer.nama;
-  document.getElementById('detailHp').innerText = customer.hp;
-  document.getElementById('detailEmail').innerText = customer.email;
-  document.getElementById('detailStatusBadge').innerHTML = getStatusBadge(customer.status);
-
-  document.getElementById('drawerOverlay').style.display = 'block';
-  document.getElementById('customerDrawer').classList.add('open');
-}
-
-function closeDrawer() {
-  document.getElementById('drawerOverlay').style.display = 'none';
-  document.getElementById('customerDrawer').classList.remove('open');
-}
-
-// Modal Edit Controls
-function openEditModal(id) {
-  const customer = customers.find(c => c.id === id);
-  if (!customer) return;
-
-  document.getElementById('editId').value = customer.id;
-  document.getElementById('editNama').value = customer.nama;
-  document.getElementById('editHp').value = customer.hp;
-  document.getElementById('editEmail').value = customer.email;
-  document.getElementById('editStatus').value = customer.status;
-
-  document.getElementById('editModal').style.display = 'flex';
-}
-
-function closeEditModal() {
-  document.getElementById('editModal').style.display = 'none';
-}
-
-function saveCustomer(e) {
-  e.preventDefault();
-  const id = document.getElementById('editId').value;
-  const index = customers.findIndex(c => c.id === id);
-
-  if (index !== -1) {
-    customers[index].nama = document.getElementById('editNama').value;
-    customers[index].hp = document.getElementById('editHp').value;
-    customers[index].email = document.getElementById('editEmail').value;
-    customers[index].status = document.getElementById('editStatus').value;
-
-    handleFilter();
-    closeEditModal();
-    alert('Data pelanggan berhasil diperbarui!');
-  }
-}
-
-// Jalankan fungsi awal saat halaman dimuat
-renderTable();
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="app.js?v=300"></script>
+</body>
+</html>
