@@ -142,6 +142,7 @@ let state = {
   custPage: 1,
   expPage: 1,
   custSearch: "",
+  custStatusFilter: "",
   txSearch: "",
   dashboardPeriod: "all",
   syncStatus: "online"
@@ -186,8 +187,8 @@ function seedData() {
       { id: stf.s2, name: "Sugiono", role: "Terapis Bayi", phone: "0813-3333-4444" },
     ],
     customers: [
-      { id: cust.a, name: "Yanti", babyName: "Yanto", dob: "2026-08-05", phone: "0811-2233-4455", address: "Jl. Mawar No. 12" },
-      { id: cust.b, name: "Christian", babyName: "Ronaldo", dob: "2024-08-10", phone: "0822-5566-7788", address: "Perum Graha Indah" },
+      { id: cust.a, name: "Yanti", babyName: "Yanto", dob: "2026-08-05", phone: "0811-2233-4455", address: "Jl. Mawar No. 12", status: "Aktif" },
+      { id: cust.b, name: "Christian", babyName: "Ronaldo", dob: "2024-08-10", phone: "0822-5566-7788", address: "Perum Graha Indah", status: "VIP" },
     ],
     transactions: [
       { id: uid(), date: todayISO(), customerId: cust.a, serviceId: svc.baby, staffId: stf.s1, type: "Studio", amount: 30000, isDp: true, totalServiceCost: 100000, note: "DP Reservasi" },
@@ -440,7 +441,6 @@ function viewRingkasan(d) {
       </div>
     </div>` : ""}
 
-    <!-- KONTAINER GRAFIK LINE CHART -->
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px; margin-top:16px;">
       <div class="fx-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -467,12 +467,8 @@ function viewRingkasan(d) {
 
 function bindRingkasan() {}
 
-/* FUNGSI RENDER GRAFIK DENGAN CANVAS HTML5 MURNI */
 function initCharts(d) {
   setTimeout(() => {
-    // -------------------------------------------------------------
-    // 1. GRAFIK GARIS KEUANGAN (PENDAPATAN VS PENGELUARAN)
-    // -------------------------------------------------------------
     const canvasFin = document.getElementById("chart-finance");
     if (canvasFin) {
       const ctx = canvasFin.getContext("2d");
@@ -486,7 +482,6 @@ function initCharts(d) {
       const height = rect.height;
       const padding = { top: 30, bottom: 35, left: 20, right: 20 };
 
-      // Kelompokkan data transaksi & pengeluaran berdasarkan tanggal
       const dateMap = {};
       (d.transactions || []).forEach(t => {
         if (!dateMap[t.date]) dateMap[t.date] = { rev: 0, exp: 0 };
@@ -509,7 +504,6 @@ function initCharts(d) {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Garis Acuan Grid (Dotted)
       ctx.strokeStyle = "#E2E8F0";
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -521,7 +515,6 @@ function initCharts(d) {
       const getX = (i) => padding.left + (i * (width - padding.left - padding.right) / (dates.length - 1 || 1));
       const getY = (val) => height - padding.bottom - (val / maxVal * (height - padding.top - padding.bottom));
 
-      // Menggambar Line Chart Pendapatan (Hijau/Sage)
       ctx.beginPath();
       ctx.lineWidth = 3;
       ctx.strokeStyle = "#A3B18A";
@@ -533,7 +526,6 @@ function initCharts(d) {
       });
       ctx.stroke();
 
-      // Titik Point Pendapatan
       revData.forEach((val, i) => {
         const x = getX(i);
         const y = getY(val);
@@ -546,22 +538,17 @@ function initCharts(d) {
         ctx.arc(x, y, 2, 0, Math.PI * 2);
         ctx.fill();
 
-        // Label Nilai
         ctx.fillStyle = "#2B2D42";
         ctx.font = "bold 10px sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(fmtIDR(val), x, y - 10);
 
-        // Label Tanggal
         ctx.fillStyle = "#8D99AE";
         ctx.font = "10px sans-serif";
         ctx.fillText(dates[i].slice(5), x, height - 10);
       });
     }
 
-    // -------------------------------------------------------------
-    // 2. GRAFIK GARIS LAYANAN TERLARIS (PERMINTAAN TREN)
-    // -------------------------------------------------------------
     const canvasSvc = document.getElementById("chart-services");
     if (canvasSvc) {
       const ctx = canvasSvc.getContext("2d");
@@ -594,7 +581,6 @@ function initCharts(d) {
 
       ctx.clearRect(0, 0, width, height);
 
-      // Garis Acuan Grid (Dotted)
       ctx.strokeStyle = "#E2E8F0";
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -606,7 +592,6 @@ function initCharts(d) {
       const getX = (i) => padding.left + (i * (width - padding.left - padding.right) / (labels.length - 1 || 1));
       const getY = (val) => height - padding.bottom - (val / maxSvcVal * (height - padding.top - padding.bottom));
 
-      // Menggambar Line Chart Layanan (Merah Muda/Pink Accent)
       ctx.beginPath();
       ctx.lineWidth = 3.5;
       ctx.strokeStyle = "#E85D88";
@@ -618,7 +603,6 @@ function initCharts(d) {
       });
       ctx.stroke();
 
-      // Titik Point & Label Layanan
       dataValues.forEach((val, i) => {
         const x = getX(i);
         const y = getY(val);
@@ -632,13 +616,11 @@ function initCharts(d) {
         ctx.arc(x, y, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
-        // Label Jumlah Transaksi
         ctx.fillStyle = "#4A1E2B";
         ctx.font = "bold 11px sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(`${val}x`, x, y - 10);
 
-        // Label Nama Layanan
         ctx.fillStyle = "#2B2D42";
         ctx.font = "10px sans-serif";
         ctx.fillText(labels[i], x, height - 10);
@@ -739,7 +721,7 @@ function viewJadwal(d) {
             <div style="flex:1;"><label class="field-label">Layanan</label>
               <select class="fx-input" id="sch-service">
                 <option value="">-- Pilih --</option>
-                ${(d.services || []).map(s => `<option value="${s.id}">${esc(s.name)} — ${fmtIDR(s.price)}</option>`).join("")}
+                ${(d.services || []).map(s => `<option value="${s.id}">${esc(s.name)} —${fmtIDR(s.price)}</option>`).join("")}
               </select>
             </div>
             <div style="flex:1;"><label class="field-label">Terapis</label>
@@ -1151,11 +1133,11 @@ function viewStok(d) {
               <td style="text-align:center;">
                 <div style="display:inline-flex; align-items:center; gap:8px;">
                   <button class="fx-btn fx-btn-mini" data-action="minus-stock" data-id="${i.id}" style="background:var(--blush); color:var(--ink); font-weight:bold;">−</button>
-                  <span style="font-weight:700; font-size:14px; min-width:30px; text-align:center;">${i.stock} ${esc(i.unit || 'pcs')}</span>
+                  <span style="font-weight:700; font-size:14px; min-width:30px; text-align:center;">${i.stock}${esc(i.unit || 'pcs')}</span>
                   <button class="fx-btn fx-btn-mini" data-action="plus-stock" data-id="${i.id}" style="background:var(--sage); color:white; font-weight:bold;">+</button>
                 </div>
               </td>
-              <td>${i.minStock || 0} ${esc(i.unit || 'pcs')}</td>
+              <td>${i.minStock \vert{}\vert{} 0}${esc(i.unit || 'pcs')}</td>
               <td>${isLow ? '<span class="badge" style="background:#FDF3E3; color:#B37418;">⚠️ Menipis</span>' : '<span class="badge badge-ok">✓ Aman</span>'}</td>
               <td style="text-align:right;"><button class="fx-btn-ghost" data-action="del-inv" data-id="${i.id}">${ICONS.trash}</button></td>
             </tr>`;
@@ -1195,46 +1177,132 @@ function bindStok() {
 }
 
 /* ==========================================================================
-   10. MODULE: PELANGGAN
+   10. MODULE: PELANGGAN (DENGAN FITUR EDIT, SEARCH, PAGINATION, DRAWER, STATUS)
    ========================================================================== */
 function viewPelanggan(d) {
+  if (!d.customers) d.customers = [];
+
+  let list = [...d.customers];
+  const searchQuery = (state.custSearch || "").toLowerCase().trim();
+  const statusQuery = state.custStatusFilter || "";
+
+  // Filter Search & Status
+  if (searchQuery || statusQuery) {
+    list = list.filter(c => {
+      const matchSearch = (c.name && c.name.toLowerCase().includes(searchQuery)) ||
+                          (c.babyName && c.babyName.toLowerCase().includes(searchQuery)) ||
+                          (c.phone && c.phone.includes(searchQuery));
+      const matchStatus = !statusQuery || (c.status || "Aktif") === statusQuery;
+      return matchSearch && matchStatus;
+    });
+  }
+
+  const pg = paginate(list, state.custPage || 1, 5);
+
   return `
     ${header("Data Pelanggan", "Kelola Data Ibu, Bayi, Riwayat, dan Pengingat WA")}
+
     <div class="fx-card">
-      <button class="fx-btn" id="open-cust-modal" style="margin-bottom:12px;">${ICONS.plus} Tambah Pelanggan Baru</button>
+      <!-- Toolbar Controls (Search & Filter Status & Tambah Baru) -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; gap:10px; flex:1; min-width:260px;">
+          <input class="fx-input" id="cust-search-input" value="${esc(state.custSearch || '')}" placeholder="🔍 Cari nama ibu, bayi, HP..." style="flex:1;">
+          <select class="fx-input" id="cust-status-filter" style="width:140px;">
+            <option value="" ${state.custStatusFilter === '' ? 'selected' : ''}>Semua Status</option>
+            <option value="Aktif" ${state.custStatusFilter === 'Aktif' ? 'selected' : ''}>Aktif</option>
+            <option value="VIP" ${state.custStatusFilter === 'VIP' ? 'selected' : ''}>VIP</option>
+            <option value="Non-aktif" ${state.custStatusFilter === 'Non-aktif' ? 'selected' : ''}>Non-aktif</option>
+          </select>
+        </div>
+        <button class="fx-btn" id="open-cust-modal">${ICONS.plus} Tambah Pelanggan Baru</button>
+      </div>
+
+      <!-- Tabel Pelanggan -->
       <table class="fx-table">
-        <thead><tr><th>NAMA IBU</th><th>NAMA BAYI & USIA</th><th>TERAKHIR ORDER</th><th>NO HP</th><th style="text-align:right;">AKSI</th></tr></thead>
+        <thead>
+          <tr>
+            <th>NAMA IBU</th>
+            <th>NAMA BAYI & USIA</th>
+            <th>TERAKHIR ORDER</th>
+            <th>NO HP</th>
+            <th>STATUS</th>
+            <th style="text-align:right;">AKSI</th>
+          </tr>
+        </thead>
         <tbody>
-          ${(!d.customers || d.customers.length === 0) ? '<tr class="empty-row"><td colspan="5">Belum ada pelanggan.</td></tr>' : ''}
-          ${(d.customers || []).map(c => {
+          ${pg.items.length === 0 ? '<tr class="empty-row"><td colspan="6">Belum ada data pelanggan.</td></tr>' : ''}
+          ${pg.items.map(c => {
             const custTxs = (d.transactions || []).filter(t => t.customerId === c.id);
             const lastTx = custTxs.sort((a,b) => b.date.localeCompare(a.date))[0];
             const lastOrderDate = lastTx ? lastTx.date : null;
 
-            return `<tr>
-              <td><strong>Bunda ${esc(c.name)}</strong></td>
-              <td>👶 <strong>${esc(c.babyName || '-')}</strong><br><small style="color:var(--inkSoft);">Usia: ${calcAge(c.dob)}</small></td>
-              <td>
-                <strong style="color:var(--sageDark); font-size:12.5px;">${lastOrderDate ? fmtDate(lastOrderDate) : 'Belum Pernah'}</strong><br>
-                <small style="color:var(--inkSoft);">${daysAgoText(lastOrderDate)}</small>
-              </td>
-              <td>${esc(c.phone || '-')}</td>
-              <td style="text-align:right;">
-                <div style="display:flex; gap:4px; justify-content:flex-end;">
-                  <button class="fx-btn fx-btn-mini" data-action="remind-wa" data-id="${c.id}" style="background:#25D366; color:white;">🔔 WA Pengingat</button>
-                  <button class="fx-btn fx-btn-mini" data-action="view-cust-detail" data-id="${c.id}" style="background:var(--aqua); color:white;">👁️ Detail</button>
-                  <button class="fx-btn-ghost" data-action="del-cust" data-id="${c.id}">${ICONS.trash}</button>
-                </div>
-              </td>
-            </tr>`;
+            const currentStatus = c.status || 'Aktif';
+            let badgeStyle = 'background:#f1f5f9; color:#475569;';
+            if (currentStatus === 'Aktif') badgeStyle = 'background:#dcfce7; color:#166534;';
+            if (currentStatus === 'VIP') badgeStyle = 'background:#fef3c7; color:#92400e;';
+
+            return `
+              <tr style="cursor:pointer;" class="cust-row" data-id="${c.id}">
+                <td><strong>Bunda ${esc(c.name)}</strong></td>
+                <td>👶 <strong>${esc(c.babyName || '-')}</strong><br><small style="color:var(--inkSoft);">Usia: ${calcAge(c.dob)}</small></td>
+                <td>
+                  <strong style="color:var(--sageDark); font-size:12.5px;">${lastOrderDate ? fmtDate(lastOrderDate) : 'Belum Pernah'}</strong><br>
+                  <small style="color:var(--inkSoft);">${daysAgoText(lastOrderDate)}</small>
+                </td>
+                <td>${esc(c.phone || '-')}</td>
+                <td><span class="badge" style="${badgeStyle}">${esc(currentStatus)}</span></td>
+                <td style="text-align:right;">
+                  <div style="display:flex; gap:4px; justify-content:flex-end;">
+                    <button class="fx-btn fx-btn-mini" data-action="edit-cust" data-id="${c.id}" style="background:var(--pink, #e91e63); color:white;">✏️ Edit</button>
+                    <button class="fx-btn fx-btn-mini" data-action="remind-wa" data-id="${c.id}" style="background:#25D366; color:white;">🔔 WA</button>
+                    <button class="fx-btn-ghost" data-action="del-cust" data-id="${c.id}">${ICONS.trash}</button>
+                  </div>
+                </td>
+              </tr>
+            `;
           }).join("")}
         </tbody>
       </table>
+
+      <!-- Pagination Controls -->
+      ${pg.renderControls('cust')}
     </div>
 
-    <!-- MODAL POPUP DETAIL PELANGGAN -->
-    <div class="modal-overlay" id="cust-detail-modal">
-      <div class="modal-container" style="max-width:480px; background:white; padding:20px; border-radius:12px; margin:auto;" id="cust-detail-content"></div>
+    <!-- SLIDE-OVER DRAWER DETAIL PELANGGAN -->
+    <div id="cust-drawer-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:998;"></div>
+    <div id="cust-drawer" style="position:fixed; top:0; right:-380px; width:360px; height:100%; background:#fff; z-index:999; transition:right 0.3s ease; padding:24px; box-shadow:-2px 0 10px rgba(0,0,0,0.1); display:flex; flex-direction:column;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line, #eee); padding-bottom:12px;">
+        <h3 style="margin:0; color:var(--ink);">👤 Detail Profil Pelanggan</h3>
+        <button id="close-cust-drawer-btn" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">&times;</button>
+      </div>
+      <div style="margin-top:20px; flex:1; overflow-y:auto; font-size:13.5px;" id="cust-drawer-content">
+        <!-- Content diisi dinamis oleh JavaScript -->
+      </div>
+    </div>
+
+    <!-- MODAL EDIT PELANGGAN -->
+    <div class="modal-overlay" id="cust-edit-modal">
+      <div class="modal-container" style="max-width:400px; background:white; padding:20px; border-radius:12px; margin:auto;">
+        <h3>✏️ Edit Data Pelanggan</h3>
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <input type="hidden" id="edit-cust-id">
+          <div><label class="field-label">Nama Ibu</label><input class="fx-input" id="edit-cust-name"></div>
+          <div><label class="field-label">Nama Bayi</label><input class="fx-input" id="edit-cust-baby"></div>
+          <div><label class="field-label">Tanggal Lahir Bayi</label><input class="fx-input" type="date" id="edit-cust-dob"></div>
+          <div><label class="field-label">No. HP / WA</label><input class="fx-input" id="edit-cust-phone"></div>
+          <div><label class="field-label">Alamat</label><input class="fx-input" id="edit-cust-address"></div>
+          <div>
+            <label class="field-label">Status Pelanggan</label>
+            <select class="fx-input" id="edit-cust-status">
+              <option value="Aktif">Aktif</option>
+              <option value="VIP">VIP</option>
+              <option value="Non-aktif">Non-aktif</option>
+            </select>
+          </div>
+          <button class="fx-btn" id="save-edit-cust" style="margin-top:10px;">💾 Simpan Perubahan</button>
+          <button class="fx-btn-ghost" id="close-cust-edit-modal">Batal</button>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL TAMBAH PELANGGAN -->
@@ -1248,6 +1316,14 @@ function viewPelanggan(d) {
           <input class="fx-input" type="date" id="cust-dob">
           <input class="fx-input" id="cust-phone" placeholder="No. HP / WA">
           <input class="fx-input" id="cust-address" placeholder="Alamat">
+          <div>
+            <label class="field-label">Status Pelanggan</label>
+            <select class="fx-input" id="cust-status">
+              <option value="Aktif">Aktif</option>
+              <option value="VIP">VIP</option>
+              <option value="Non-aktif">Non-aktif</option>
+            </select>
+          </div>
           <button class="fx-btn" id="cust-add" style="margin-top:10px;">${ICONS.plus} Simpan</button>
           <button class="fx-btn-ghost" id="close-cust-modal">Batal</button>
         </div>
@@ -1258,8 +1334,25 @@ function viewPelanggan(d) {
 
 function bindPelanggan() {
   const modal = document.getElementById("cust-modal");
-  const detailModal = document.getElementById("cust-detail-modal");
+  const editModal = document.getElementById("cust-edit-modal");
 
+  // Filter Search Input Listener
+  const searchInput = document.getElementById("cust-search-input");
+  searchInput?.addEventListener("input", (e) => {
+    state.custSearch = e.target.value;
+    state.custPage = 1;
+    renderTab();
+  });
+
+  // Filter Status Select Listener
+  const statusFilter = document.getElementById("cust-status-filter");
+  statusFilter?.addEventListener("change", (e) => {
+    state.custStatusFilter = e.target.value;
+    state.custPage = 1;
+    renderTab();
+  });
+
+  // Modal Tambah Controls
   document.getElementById("open-cust-modal")?.addEventListener("click", () => modal?.classList.add("active"));
   document.getElementById("close-cust-modal")?.addEventListener("click", () => modal?.classList.remove("active"));
   
@@ -1267,18 +1360,85 @@ function bindPelanggan() {
     const name = document.getElementById("cust-name").value.trim();
     if (!name) return showToast("Isi Nama Ibu!", "error");
     if (!state.data.customers) state.data.customers = [];
+
     state.data.customers.unshift({
       id: uid(),
       name,
       babyName: document.getElementById("cust-baby").value.trim(),
       dob: document.getElementById("cust-dob").value,
       phone: document.getElementById("cust-phone").value.trim(),
-      address: document.getElementById("cust-address").value.trim()
+      address: document.getElementById("cust-address").value.trim(),
+      status: document.getElementById("cust-status").value || "Aktif"
     });
-    save(); showToast("Pelanggan Tersimpan!", "success"); modal?.classList.remove("active"); renderTab();
+
+    save();
+    showToast("Pelanggan Tersimpan!", "success");
+    modal?.classList.remove("active");
+    renderTab();
   });
 
-  document.querySelectorAll('[data-action="remind-wa"]').forEach(btn => btn.addEventListener("click", () => {
+  // Event Klik Baris Tabel untuk Buka Slide-Over Drawer
+  document.querySelectorAll('.cust-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      // Mencegah drawer terbuka jika tombol aksi diklik
+      if (e.target.closest('button')) return;
+
+      const custId = row.dataset.id;
+      const cust = (state.data.customers || []).find(c => c.id === custId);
+      if (!cust) return;
+
+      openCustDrawer(cust);
+    });
+  });
+
+  // Close Drawer Event
+  document.getElementById('close-cust-drawer-btn')?.addEventListener('click', closeCustDrawer);
+  document.getElementById('cust-drawer-overlay')?.addEventListener('click', closeCustDrawer);
+
+  // Edit Modal Controls
+  document.querySelectorAll('[data-action="edit-cust"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const custId = btn.dataset.id;
+      const cust = (state.data.customers || []).find(c => c.id === custId);
+      if (!cust) return;
+
+      document.getElementById('edit-cust-id').value = cust.id;
+      document.getElementById('edit-cust-name').value = cust.name || '';
+      document.getElementById('edit-cust-baby').value = cust.babyName || '';
+      document.getElementById('edit-cust-dob').value = cust.dob || '';
+      document.getElementById('edit-cust-phone').value = cust.phone || '';
+      document.getElementById('edit-cust-address').value = cust.address || '';
+      document.getElementById('edit-cust-status').value = cust.status || 'Aktif';
+
+      editModal?.classList.add('active');
+    });
+  });
+
+  document.getElementById('close-cust-edit-modal')?.addEventListener('click', () => editModal?.classList.remove('active'));
+
+  document.getElementById('save-edit-cust')?.addEventListener('click', () => {
+    const id = document.getElementById('edit-cust-id').value;
+    const cust = (state.data.customers || []).find(c => c.id === id);
+
+    if (cust) {
+      cust.name = document.getElementById('edit-cust-name').value.trim();
+      cust.babyName = document.getElementById('edit-cust-baby').value.trim();
+      cust.dob = document.getElementById('edit-cust-dob').value;
+      cust.phone = document.getElementById('edit-cust-phone').value.trim();
+      cust.address = document.getElementById('edit-cust-address').value.trim();
+      cust.status = document.getElementById('edit-cust-status').value;
+
+      save();
+      showToast("Data pelanggan berhasil diperbarui!", "success");
+      editModal?.classList.remove('active');
+      renderTab();
+    }
+  });
+
+  // WA Remind Action
+  document.querySelectorAll('[data-action="remind-wa"]').forEach(btn => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
     const cust = (state.data.customers || []).find(c => c.id === btn.dataset.id);
     if (!cust || !cust.phone) return showToast("Nomor HP pelanggan tidak ditemukan!", "error");
 
@@ -1294,45 +1454,61 @@ function bindPelanggan() {
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(msg)}`, "_blank");
   }));
 
-  document.querySelectorAll('[data-action="view-cust-detail"]').forEach(btn => btn.addEventListener("click", () => {
-    const cust = (state.data.customers || []).find(c => c.id === btn.dataset.id);
-    if (!cust) return;
-
-    const txList = (state.data.transactions || []).filter(t => t.customerId === cust.id);
-    const lastTx = txList.sort((a,b) => b.date.localeCompare(a.date))[0];
-    const totalSpent = txList.reduce((s, t) => s + (t.amount || 0), 0);
-
-    const detailContent = document.getElementById("cust-detail-content");
-    if (detailContent) {
-      detailContent.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:10px; margin-bottom:12px;">
-          <h3 style="margin:0; color:var(--ink);">👤 Detail Profil Pelanggan</h3>
-          <button class="fx-btn-ghost" id="close-cust-detail-btn" style="font-size:16px;">✕</button>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:8px; font-size:13.5px;">
-          <div><strong>Nama Ibu:</strong> Bunda ${esc(cust.name)}</div>
-          <div><strong>Nama Bayi:</strong> 👶 ${esc(cust.babyName || '-')}</div>
-          <div><strong>Usia Bayi:</strong> ${calcAge(cust.dob)} (${cust.dob ? fmtDate(cust.dob) : 'Tgl Lahir Belum Set'})</div>
-          <div><strong>Terakhir Order:</strong> ${lastTx ? fmtDate(lastTx.date) + ' (' + daysAgoText(lastTx.date) + ')' : 'Belum Pernah'}</div>
-          <div><strong>No. HP/WA:</strong> ${esc(cust.phone || '-')}</div>
-          <div><strong>Alamat:</strong> ${esc(cust.address || '-')}</div>
-          <hr style="border:none; border-top:1px dashed var(--line); margin:8px 0;">
-          <div style="background:#FAF2F5; padding:10px; border-radius:8px;">
-            <div><strong>Total Kunjungan/Repeat Order:</strong> <span class="badge badge-ok">${txList.length} kali</span></div>
-            <div style="margin-top:4px;"><strong>Total Pengeluaran:</strong> <strong style="color:var(--sageDark);">${fmtIDR(totalSpent)}</strong></div>
-          </div>
-        </div>
-      `;
-      detailModal?.classList.add("active");
-      document.getElementById("close-cust-detail-btn")?.addEventListener("click", () => detailModal?.classList.remove("active"));
-    }
-  }));
-
-  document.querySelectorAll('[data-action="del-cust"]').forEach(btn => btn.addEventListener("click", () => {
+  // Delete Action
+  document.querySelectorAll('[data-action="del-cust"]').forEach(btn => btn.addEventListener("click", (e) => {
+    e.stopPropagation();
     showConfirmModal("Hapus Pelanggan?", "Data profil pelanggan ini akan dihapus.", () => {
-      state.data.customers = state.data.customers.filter(c => c.id !== btn.dataset.id); save(); renderTab();
+      state.data.customers = state.data.customers.filter(c => c.id !== btn.dataset.id); 
+      save(); 
+      renderTab();
     });
   }));
+
+  // Pagination Action
+  document.querySelectorAll('[data-page-action="cust"]').forEach(btn => btn.addEventListener("click", () => {
+    state.custPage = Number(btn.dataset.page); 
+    renderTab();
+  }));
+}
+
+// Drawer Control Helpers
+function openCustDrawer(cust) {
+  const txList = (state.data.transactions || []).filter(t => t.customerId === cust.id);
+  const lastTx = txList.sort((a,b) => b.date.localeCompare(a.date))[0];
+  const totalSpent = txList.reduce((s, t) => s + (t.amount || 0), 0);
+
+  const drawerContent = document.getElementById('cust-drawer-content');
+  if (drawerContent) {
+    let badgeStyle = 'background:#f1f5f9; color:#475569;';
+    const status = cust.status || 'Aktif';
+    if (status === 'Aktif') badgeStyle = 'background:#dcfce7; color:#166534;';
+    if (status === 'VIP') badgeStyle = 'background:#fef3c7; color:#92400e;';
+
+    drawerContent.innerHTML = `
+      <div style="margin-bottom:14px;"><small style="color:#888;">NAMA IBU</small><div style="font-weight:600; font-size:15px;">Bunda ${esc(cust.name)}</div></div>
+      <div style="margin-bottom:14px;"><small style="color:#888;">NAMA BAYI</small><div style="font-weight:600; font-size:15px;">👶 ${esc(cust.babyName || '-')}</div></div>
+      <div style="margin-bottom:14px;"><small style="color:#888;">USIA BAYI</small><div>${calcAge(cust.dob)} (${cust.dob ? fmtDate(cust.dob) : 'Belum diisi'})</div></div>
+      <div style="margin-bottom:14px;"><small style="color:#888;">NO. HP / WA</small><div>${esc(cust.phone || '-')}</div></div>
+      <div style="margin-bottom:14px;"><small style="color:#888;">ALAMAT</small><div>${esc(cust.address || '-')}</div></div>
+      <div style="margin-bottom:14px;"><small style="color:#888;">STATUS</small><div><span class="badge" style="${badgeStyle}">${esc(status)}</span></div></div>
+      <hr style="border:none; border-top:1px dashed var(--line, #eee); margin:16px 0;">
+      <div style="background:#FAF2F5; padding:12px; border-radius:8px;">
+        <div style="margin-bottom:6px;"><strong>Terakhir Order:</strong> ${lastTx ? fmtDate(lastTx.date) + ' (' + daysAgoText(lastTx.date) + ')' : 'Belum Pernah'}</div>
+        <div style="margin-bottom:6px;"><strong>Total Kunjungan:</strong> <span class="badge badge-ok">${txList.length} kali</span></div>
+        <div><strong>Total Transaksi:</strong> <strong style="color:var(--sageDark);">${fmtIDR(totalSpent)}</strong></div>
+      </div>
+    `;
+  }
+
+  document.getElementById('cust-drawer-overlay').style.display = 'block';
+  document.getElementById('cust-drawer').style.right = '0';
+}
+
+function closeCustDrawer() {
+  const overlay = document.getElementById('cust-drawer-overlay');
+  const drawer = document.getElementById('cust-drawer');
+  if (overlay) overlay.style.display = 'none';
+  if (drawer) drawer.style.right = '-380px';
 }
 
 /* ==========================================================================
@@ -1430,75 +1606,3 @@ document.addEventListener("DOMContentLoaded", () => {
     if (clockEl) clockEl.textContent = new Date().toLocaleTimeString("id-ID");
   }, 1000);
 });
-
-// Mock Data Pelanggan
-let customers = [
-  { id: 'CUST-001', nama: 'Budi Santoso', hp: '081234567890', email: 'budi@gmail.com', status: 'Aktif' },
-  { id: 'CUST-002', nama: 'Siti Rahma', hp: '082198765432', email: 'siti@yahoo.com', status: 'VIP' },
-  { id: 'CUST-003', nama: 'Andi Wijaya', hp: '085712344321', email: 'andi@gmail.com', status: 'Non-aktif' },
-  { id: 'CUST-004', nama: 'Dewi Lestari', hp: '081399887766', email: 'dewi@outlook.com', status: 'Aktif' },
-  { id: 'CUST-005', nama: 'Rian Hidayat', hp: '087811223344', email: 'rian@gmail.com', status: 'VIP' },
-  { id: 'CUST-006', nama: 'Eka Putri', hp: '089655443322', email: 'eka@gmail.com', status: 'Aktif' },
-  { id: 'CUST-007', nama: 'Fajar Pratama', hp: '081122334455', email: 'fajar@yahoo.com', status: 'Non-aktif' }
-];
-
-let filteredData = [...customers];
-let currentPage = 1;
-const rowsPerPage = 5;
-
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Pelanggan — Ulfa Baby Spa</title>
-  <link rel="icon" type="image/png" href="icon.png">
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-</head>
-<body data-page="pelanggan">
-
-  <div id="app">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="brand-icon">
-          <img src="icon.png" alt="Logo Ulfa Baby Spa" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.style.display='none';this.parentElement.innerHTML='👶';">
-        </div>
-        <div class="brand-text">
-          <div class="brand-title fx-display">Dashboard</div>
-          <div class="brand-sub">ULFA BABY SPA</div>
-        </div>
-      </div>
-
-      <nav class="navlist">
-        <a href="index.html" class="navbtn">📊 <span>Ringkasan</span></a>
-        <a href="jadwal.html" class="navbtn">📅 <span>Jadwal Booking</span></a>
-        <a href="transaksi.html" class="navbtn">🧾 <span>Transaksi</span></a>
-        <a href="layanan.html" class="navbtn">✨ <span>Layanan & Paket</span></a>
-        <a href="stok.html" class="navbtn">📦 <span>Stok</span></a>
-        <a href="pelanggan.html" class="navbtn active">👥 <span>Pelanggan</span></a>
-        <a href="keuangan.html" class="navbtn">👛 <span>Keuangan</span></a>
-        <a href="staf.html" class="navbtn">👩‍⚕️ <span>Staf</span></a>
-      </nav>
-
-      <div class="footer-note">
-        Tersimpan di perangkat ini.<br><br>
-        <button class="fx-btn fx-btn-mini" onclick="exportToExcel()" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; background:#217346; color:white; border:none;">📊 Export ke Excel</button>
-        <label class="fx-btn fx-btn-mini" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; cursor:pointer; background:var(--sage); color:white;">
-          📥 Import Excel / JSON
-          <input type="file" accept=".xlsx,.xls,.csv,.json" style="display:none;" onchange="importDataFile(event)">
-        </label>
-        <button class="fx-btn fx-btn-mini" onclick="backupData()" style="width:100%; display:flex; justify-content:center; background:var(--line); color:var(--ink); border:none;">💾 Backup JSON</button>
-      </div>
-    </aside>
-
-    <main id="main"></main>
-  </div>
-
-  <div id="toast-container"></div>
-  <div id="print-area"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script defer src="app.js?v=300"></script>
-</body>
-</html>
