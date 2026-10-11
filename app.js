@@ -1112,9 +1112,6 @@ function bindLayanan() {
 /* ==========================================================================
    9. MODULE: STOK
    ========================================================================== */
-/* ==========================================================================
-   9. MODULE: STOK
-   ========================================================================== */
 function viewStok(d) {
   return `
     ${header("Stok Bahan & Produk", "Kelola persediaan barang dan batas stok minimal")}
@@ -1150,6 +1147,7 @@ function viewStok(d) {
     </div>
   `;
 }
+
 function bindStok() {
   document.getElementById("inv-add")?.addEventListener("click", () => {
     const name = document.getElementById("inv-name").value.trim();
