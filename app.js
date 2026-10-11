@@ -1177,7 +1177,7 @@ function bindStok() {
 }
 
 /* ==========================================================================
-   10. MODULE: PELANGGAN (DENGAN FITUR EDIT, SEARCH, PAGINATION, DRAWER, STATUS)
+   10. MODULE: PELANGGAN
    ========================================================================== */
 function viewPelanggan(d) {
   if (!d.customers) d.customers = [];
@@ -1186,7 +1186,6 @@ function viewPelanggan(d) {
   const searchQuery = (state.custSearch || "").toLowerCase().trim();
   const statusQuery = state.custStatusFilter || "";
 
-  // Filter Search & Status
   if (searchQuery || statusQuery) {
     list = list.filter(c => {
       const matchSearch = (c.name && c.name.toLowerCase().includes(searchQuery)) ||
@@ -1203,7 +1202,6 @@ function viewPelanggan(d) {
     ${header("Data Pelanggan", "Kelola Data Ibu, Bayi, Riwayat, dan Pengingat WA")}
 
     <div class="fx-card">
-      <!-- Toolbar Controls (Search & Filter Status & Tambah Baru) -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
         <div style="display:flex; gap:10px; flex:1; min-width:260px;">
           <input class="fx-input" id="cust-search-input" value="${esc(state.custSearch || '')}" placeholder="🔍 Cari nama ibu, bayi, HP..." style="flex:1;">
@@ -1217,7 +1215,6 @@ function viewPelanggan(d) {
         <button class="fx-btn" id="open-cust-modal">${ICONS.plus} Tambah Pelanggan Baru</button>
       </div>
 
-      <!-- Tabel Pelanggan -->
       <table class="fx-table">
         <thead>
           <tr>
@@ -1264,7 +1261,6 @@ function viewPelanggan(d) {
         </tbody>
       </table>
 
-      <!-- Pagination Controls -->
       ${pg.renderControls('cust')}
     </div>
 
@@ -1275,9 +1271,7 @@ function viewPelanggan(d) {
         <h3 style="margin:0; color:var(--ink);">👤 Detail Profil Pelanggan</h3>
         <button id="close-cust-drawer-btn" style="background:none; border:none; font-size:20px; cursor:pointer; color:#888;">&times;</button>
       </div>
-      <div style="margin-top:20px; flex:1; overflow-y:auto; font-size:13.5px;" id="cust-drawer-content">
-        <!-- Content diisi dinamis oleh JavaScript -->
-      </div>
+      <div style="margin-top:20px; flex:1; overflow-y:auto; font-size:13.5px;" id="cust-drawer-content"></div>
     </div>
 
     <!-- MODAL EDIT PELANGGAN -->
@@ -1336,7 +1330,6 @@ function bindPelanggan() {
   const modal = document.getElementById("cust-modal");
   const editModal = document.getElementById("cust-edit-modal");
 
-  // Filter Search Input Listener
   const searchInput = document.getElementById("cust-search-input");
   searchInput?.addEventListener("input", (e) => {
     state.custSearch = e.target.value;
@@ -1344,7 +1337,6 @@ function bindPelanggan() {
     renderTab();
   });
 
-  // Filter Status Select Listener
   const statusFilter = document.getElementById("cust-status-filter");
   statusFilter?.addEventListener("change", (e) => {
     state.custStatusFilter = e.target.value;
@@ -1352,7 +1344,6 @@ function bindPelanggan() {
     renderTab();
   });
 
-  // Modal Tambah Controls
   document.getElementById("open-cust-modal")?.addEventListener("click", () => modal?.classList.add("active"));
   document.getElementById("close-cust-modal")?.addEventListener("click", () => modal?.classList.remove("active"));
   
@@ -1377,10 +1368,8 @@ function bindPelanggan() {
     renderTab();
   });
 
-  // Event Klik Baris Tabel untuk Buka Slide-Over Drawer
   document.querySelectorAll('.cust-row').forEach(row => {
     row.addEventListener('click', (e) => {
-      // Mencegah drawer terbuka jika tombol aksi diklik
       if (e.target.closest('button')) return;
 
       const custId = row.dataset.id;
@@ -1391,11 +1380,9 @@ function bindPelanggan() {
     });
   });
 
-  // Close Drawer Event
   document.getElementById('close-cust-drawer-btn')?.addEventListener('click', closeCustDrawer);
   document.getElementById('cust-drawer-overlay')?.addEventListener('click', closeCustDrawer);
 
-  // Edit Modal Controls
   document.querySelectorAll('[data-action="edit-cust"]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1436,7 +1423,6 @@ function bindPelanggan() {
     }
   });
 
-  // WA Remind Action
   document.querySelectorAll('[data-action="remind-wa"]').forEach(btn => btn.addEventListener("click", (e) => {
     e.stopPropagation();
     const cust = (state.data.customers || []).find(c => c.id === btn.dataset.id);
@@ -1454,7 +1440,6 @@ function bindPelanggan() {
     window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(msg)}`, "_blank");
   }));
 
-  // Delete Action
   document.querySelectorAll('[data-action="del-cust"]').forEach(btn => btn.addEventListener("click", (e) => {
     e.stopPropagation();
     showConfirmModal("Hapus Pelanggan?", "Data profil pelanggan ini akan dihapus.", () => {
@@ -1464,14 +1449,12 @@ function bindPelanggan() {
     });
   }));
 
-  // Pagination Action
   document.querySelectorAll('[data-page-action="cust"]').forEach(btn => btn.addEventListener("click", () => {
     state.custPage = Number(btn.dataset.page); 
     renderTab();
   }));
 }
 
-// Drawer Control Helpers
 function openCustDrawer(cust) {
   const txList = (state.data.transactions || []).filter(t => t.customerId === cust.id);
   const lastTx = txList.sort((a,b) => b.date.localeCompare(a.date))[0];
