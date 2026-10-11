@@ -2,167 +2,55 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daftar Pelanggan - Ulfa Baby Spa</title>
-  <!-- Hubungkan ke file CSS utama yang digunakan oleh layanan.html -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pelanggan — Ulfa Baby Spa</title>
+  <link rel="icon" type="image/png" href="icon.png">
   <link rel="stylesheet" href="style.css">
-  <!-- Jika menggunakan FontAwesome untuk Icon Sidebar -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
-<body>
+<body data-page="pelanggan">
 
-  <div class="app-layout">
-    
-    <!-- 1. SIDEBAR NAVIGASI (Sama seperti halaman lainnya) -->
+  <div id="app">
     <aside class="sidebar">
-      <div class="brand-logo">
-        <img src="logo.png" alt="Ulfa Baby Spa Logo">
+      <div class="sidebar-header">
+        <div class="brand-icon">
+          <img src="icon.png" alt="Logo Ulfa Baby Spa" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" onerror="this.style.display='none';this.parentElement.innerHTML='👶';">
+        </div>
+        <div class="brand-text">
+          <div class="brand-title fx-display">Dashboard</div>
+          <div class="brand-sub">ULFA BABY SPA</div>
+        </div>
       </div>
-      <nav class="sidebar-menu">
-        <a href="dashboard.html" class="menu-item"><i class="fa-solid fa-chart-line"></i></a>
-        <a href="layanan.html" class="menu-item"><i class="fa-solid fa-wand-magic-sparkles"></i></a>
-        <a href="pelanggan.html" class="menu-item active"><i class="fa-solid fa-users"></i></a>
-        <!-- Tambahkan menu-menu sidebar lainnya di sini -->
+
+      <nav class="navlist">
+        <a href="index.html" class="navbtn">📊 <span>Ringkasan</span></a>
+        <a href="jadwal.html" class="navbtn">📅 <span>Jadwal Booking</span></a>
+        <a href="transaksi.html" class="navbtn">🧾 <span>Transaksi</span></a>
+        <a href="layanan.html" class="navbtn">✨ <span>Layanan & Paket</span></a>
+        <a href="stok.html" class="navbtn">📦 <span>Stok</span></a>
+        <a href="pelanggan.html" class="navbtn active">👥 <span>Pelanggan</span></a>
+        <a href="keuangan.html" class="navbtn">👛 <span>Keuangan</span></a>
+        <a href="staf.html" class="navbtn">👩‍⚕️ <span>Staf</span></a>
       </nav>
-      <div class="sidebar-footer">
-        <div class="profile-circle"></div>
+
+      <div class="footer-note">
+        Tersimpan di perangkat ini.<br><br>
+        <button class="fx-btn fx-btn-mini" onclick="exportToExcel()" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; background:#217346; color:white; border:none;">📊 Export ke Excel</button>
+        <label class="fx-btn fx-btn-mini" style="width:100%; margin-bottom:6px; display:flex; justify-content:center; cursor:pointer; background:var(--sage); color:white;">
+          📥 Import Excel / JSON
+          <input type="file" accept=".xlsx,.xls,.csv,.json" style="display:none;" onchange="importDataFile(event)">
+        </label>
+        <button class="fx-btn fx-btn-mini" onclick="backupData()" style="width:100%; display:flex; justify-content:center; background:var(--line); color:var(--ink); border:none;">💾 Backup JSON</button>
       </div>
     </aside>
 
-    <!-- 2. KONTEN UTAMA -->
-    <main class="main-content">
-      
-      <!-- Top Banner Header -->
-      <header class="page-header">
-        <div class="header-title">
-          <h1>Daftar Pelanggan</h1>
-          <p>Kelola data pelanggan dan riwayat informasi kontak</p>
-        </div>
-        <div class="header-status">
-          <span class="status-online"><i class="fa-solid fa-circle"></i> Online</span>
-          <div class="time-box">
-            <div id="clock">17.31.00</div>
-            <small id="date">Senin, 1 Jan 2026</small>
-          </div>
-        </div>
-      </header>
-
-      <!-- Content Card Container -->
-      <section class="content-card">
-        
-        <!-- Header Controls (Search & Filter) -->
-        <div class="table-controls">
-          <div class="search-filter-group">
-            <input type="text" id="searchInput" class="input-search" placeholder="Cari nama, hp, atau email..." oninput="handleFilter()">
-            <select id="statusFilter" class="select-filter" onchange="handleFilter()">
-              <option value="">Semua Status</option>
-              <option value="Aktif">Aktif</option>
-              <option value="VIP">VIP</option>
-              <option value="Non-aktif">Non-aktif</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Tabel Pelanggan -->
-        <div class="table-responsive">
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>NAMA</th>
-                <th>NO. HP</th>
-                <th>EMAIL</th>
-                <th>STATUS</th>
-                <th class="text-right">AKSI</th>
-              </tr>
-            </thead>
-            <tbody id="customerTableBody">
-              <!-- Data diisi oleh script.js / App.js -->
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Footer Pagination -->
-        <div class="pagination-container">
-          <span id="pageInfo" class="page-info">Halaman 1 dari 1</span>
-          <div class="pagination-buttons">
-            <button id="prevBtn" class="btn-page" onclick="changePage(-1)">Sebelumnya</button>
-            <button id="nextBtn" class="btn-page" onclick="changePage(1)">Selanjutnya</button>
-          </div>
-        </div>
-
-      </section>
-
-    </main>
-
+    <main id="main"></main>
   </div>
 
-  <!-- Overlay & Drawer Detail Pelanggan -->
-  <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
-  <aside id="customerDrawer" class="drawer-panel">
-    <div class="drawer-header">
-      <h3>Detail Pelanggan</h3>
-      <button class="btn-close" onclick="closeDrawer()">&times;</button>
-    </div>
-    <div class="drawer-body">
-      <div class="detail-item">
-        <label>ID PELANGGAN</label>
-        <span id="detailId">-</span>
-      </div>
-      <div class="detail-item">
-        <label>NAMA LENGKAP</label>
-        <span id="detailNama">-</span>
-      </div>
-      <div class="detail-item">
-        <label>NOMOR HP</label>
-        <span id="detailHp">-</span>
-      </div>
-      <div class="detail-item">
-        <label>EMAIL</label>
-        <span id="detailEmail">-</span>
-      </div>
-      <div class="detail-item">
-        <label>STATUS</label>
-        <div id="detailStatusBadge"></div>
-      </div>
-    </div>
-  </aside>
+  <div id="toast-container"></div>
+  <div id="print-area"></div>
 
-  <!-- Modal Edit Pelanggan -->
-  <div id="editModal" class="modal-overlay">
-    <div class="modal-card">
-      <h3>Edit Data Pelanggan</h3>
-      <form id="editForm" onsubmit="saveCustomer(event)">
-        <input type="hidden" id="editId">
-        <div class="form-group">
-          <label>Nama Pelanggan</label>
-          <input type="text" id="editNama" required class="input-control">
-        </div>
-        <div class="form-group">
-          <label>Nomor HP</label>
-          <input type="text" id="editHp" required class="input-control">
-        </div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="editEmail" required class="input-control">
-        </div>
-        <div class="form-group">
-          <label>Status</label>
-          <select id="editStatus" class="input-control">
-            <option value="Aktif">Aktif</option>
-            <option value="VIP">VIP</option>
-            <option value="Non-aktif">Non-aktif</option>
-          </select>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" onclick="closeEditModal()">Batal</button>
-          <button type="submit" class="btn-primary">Simpan</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Memanggil Script JS -->
-  <script src="script.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="app.js?v=300"></script>
 </body>
 </html>
