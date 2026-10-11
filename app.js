@@ -35,8 +35,8 @@ const USERS = [
 const SUPABASE_URL = "https://lmqmnmgwkifbbhjheqxr.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxtcW1ubWd3a2lmYmJoamhlcXhyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5ODE3MTYsImV4cCI6MjEwMTU1NzcxNn0.3n3Yjo-JqZqKMnit4_qQemuvjOE9U7ipq8VOTSxX_9I";
 
-const supabaseClient = (typeof supabase !== "undefined") 
-  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) 
+const supabaseClient = (typeof supabase !== "undefined")
+  ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
 
 function showToast(msg, type = "info") {
