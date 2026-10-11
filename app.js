@@ -1137,7 +1137,7 @@ function viewStok(d) {
                   <button class="fx-btn fx-btn-mini" data-action="plus-stock" data-id="${i.id}" style="background:var(--sage); color:white; font-weight:bold;">+</button>
                 </div>
               </td>
-              <td>${i.minStock \vert{}\vert{} 0}${esc(i.unit || 'pcs')}</td>
+             <td>${i.minStock || 0}${esc(i.unit || 'pcs')}</td>
               <td>${isLow ? '<span class="badge" style="background:#FDF3E3; color:#B37418;">⚠️ Menipis</span>' : '<span class="badge badge-ok">✓ Aman</span>'}</td>
               <td style="text-align:right;"><button class="fx-btn-ghost" data-action="del-inv" data-id="${i.id}">${ICONS.trash}</button></td>
             </tr>`;
