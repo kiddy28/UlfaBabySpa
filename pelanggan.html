@@ -3,392 +3,166 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manajemen Pelanggan</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    body {
-      background-color: #f4f6f9;
-      margin: 0;
-      padding: 24px;
-      color: #333;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: 0 auto;
-      background: #fff;
-      padding: 24px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .header h2 {
-      margin: 0;
-      font-size: 24px;
-      color: #1e293b;
-    }
-
-    .controls {
-      display: flex;
-      gap: 12px;
-      width: 100%;
-      max-width: 500px;
-    }
-
-    .search-box, .filter-box {
-      padding: 10px 14px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .search-box {
-      flex: 1;
-    }
-
-    .search-box:focus, .filter-box:focus {
-      border-color: #2563eb;
-    }
-
-    .table-responsive {
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      padding: 14px;
-      text-align: left;
-      border-bottom: 1px solid #e2e8f0;
-      font-size: 14px;
-    }
-
-    th {
-      background-color: #f8fafc;
-      color: #64748b;
-      font-weight: 600;
-    }
-
-    tr:hover {
-      background-color: #f1f5f9;
-      cursor: pointer;
-    }
-
-    .badge {
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 12px;
-      font-weight: 600;
-      display: inline-block;
-    }
-
-    .badge-aktif {
-      background-color: #dcfce7;
-      color: #166534;
-    }
-
-    .badge-nonaktif {
-      background-color: #f1f5f9;
-      color: #475569;
-    }
-
-    .badge-vip {
-      background-color: #fef3c7;
-      color: #92400e;
-    }
-
-    .btn-action {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      transition: background 0.2s;
-    }
-
-    .btn-edit {
-      background-color: #2563eb;
-      color: white;
-    }
-
-    .btn-edit:hover {
-      background-color: #1d4ed8;
-    }
-
-    .pagination {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 20px;
-      padding-top: 10px;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .page-btn {
-      padding: 8px 14px;
-      border: 1px solid #cbd5e1;
-      background: white;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .page-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .drawer-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.4);
-      display: none;
-      z-index: 99;
-    }
-
-    .drawer {
-      position: fixed;
-      top: 0;
-      right: -420px;
-      width: 400px;
-      height: 100%;
-      background: white;
-      box-shadow: -4px 0 15px rgba(0,0,0,0.1);
-      transition: right 0.3s ease;
-      z-index: 100;
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .drawer.open {
-      right: 0;
-    }
-
-    .drawer-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #e2e8f0;
-      padding-bottom: 16px;
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #64748b;
-    }
-
-    .drawer-body {
-      margin-top: 20px;
-      flex: 1;
-      overflow-y: auto;
-    }
-
-    .detail-group {
-      margin-bottom: 16px;
-    }
-
-    .detail-group label {
-      font-size: 12px;
-      color: #64748b;
-      display: block;
-      margin-bottom: 4px;
-      text-transform: uppercase;
-    }
-
-    .detail-group span {
-      font-size: 16px;
-      color: #0f172a;
-      font-weight: 500;
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 200;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .modal-content {
-      background: white;
-      padding: 24px;
-      border-radius: 8px;
-      width: 90%;
-      max-width: 450px;
-    }
-
-    .form-group {
-      margin-bottom: 16px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 14px;
-    }
-
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      font-size: 14px;
-    }
-
-    .form-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 20px;
-    }
-  </style>
+  <title>Daftar Pelanggan - Ulfa Baby Spa</title>
+  <!-- Hubungkan ke file CSS utama yang digunakan oleh layanan.html -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Jika menggunakan FontAwesome untuk Icon Sidebar -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-  <div class="container">
-    <div class="header">
-      <h2>Daftar Pelanggan</h2>
-      <div class="controls">
-        <input type="text" id="searchInput" class="search-box" placeholder="Cari nama, hp, atau email..." oninput="handleFilter()">
-        <select id="statusFilter" class="filter-box" onchange="handleFilter()">
-          <option value="">Semua Status</option>
-          <option value="Aktif">Aktif</option>
-          <option value="VIP">VIP</option>
-          <option value="Non-aktif">Non-aktif</option>
-        </select>
+  <div class="app-layout">
+    
+    <!-- 1. SIDEBAR NAVIGASI (Sama seperti halaman lainnya) -->
+    <aside class="sidebar">
+      <div class="brand-logo">
+        <img src="logo.png" alt="Ulfa Baby Spa Logo">
       </div>
-    </div>
-
-    <!-- Tabel Data -->
-    <div class="table-responsive">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nama</th>
-            <th>No. HP</th>
-            <th>Email</th>
-            <th>Status</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="customerTableBody">
-          <!-- Data diisi oleh JavaScript -->
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Pagination -->
-    <div class="pagination">
-      <span id="pageInfo">Halaman 1 dari 1</span>
-      <div>
-        <button id="prevBtn" class="page-btn" onclick="changePage(-1)">Sebelumnya</button>
-        <button id="nextBtn" class="page-btn" onclick="changePage(1)">Selanjutnya</button>
+      <nav class="sidebar-menu">
+        <a href="dashboard.html" class="menu-item"><i class="fa-solid fa-chart-line"></i></a>
+        <a href="layanan.html" class="menu-item"><i class="fa-solid fa-wand-magic-sparkles"></i></a>
+        <a href="pelanggan.html" class="menu-item active"><i class="fa-solid fa-users"></i></a>
+        <!-- Tambahkan menu-menu sidebar lainnya di sini -->
+      </nav>
+      <div class="sidebar-footer">
+        <div class="profile-circle"></div>
       </div>
-    </div>
+    </aside>
+
+    <!-- 2. KONTEN UTAMA -->
+    <main class="main-content">
+      
+      <!-- Top Banner Header -->
+      <header class="page-header">
+        <div class="header-title">
+          <h1>Daftar Pelanggan</h1>
+          <p>Kelola data pelanggan dan riwayat informasi kontak</p>
+        </div>
+        <div class="header-status">
+          <span class="status-online"><i class="fa-solid fa-circle"></i> Online</span>
+          <div class="time-box">
+            <div id="clock">17.31.00</div>
+            <small id="date">Senin, 1 Jan 2026</small>
+          </div>
+        </div>
+      </header>
+
+      <!-- Content Card Container -->
+      <section class="content-card">
+        
+        <!-- Header Controls (Search & Filter) -->
+        <div class="table-controls">
+          <div class="search-filter-group">
+            <input type="text" id="searchInput" class="input-search" placeholder="Cari nama, hp, atau email..." oninput="handleFilter()">
+            <select id="statusFilter" class="select-filter" onchange="handleFilter()">
+              <option value="">Semua Status</option>
+              <option value="Aktif">Aktif</option>
+              <option value="VIP">VIP</option>
+              <option value="Non-aktif">Non-aktif</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tabel Pelanggan -->
+        <div class="table-responsive">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>NAMA</th>
+                <th>NO. HP</th>
+                <th>EMAIL</th>
+                <th>STATUS</th>
+                <th class="text-right">AKSI</th>
+              </tr>
+            </thead>
+            <tbody id="customerTableBody">
+              <!-- Data diisi oleh script.js / App.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Footer Pagination -->
+        <div class="pagination-container">
+          <span id="pageInfo" class="page-info">Halaman 1 dari 1</span>
+          <div class="pagination-buttons">
+            <button id="prevBtn" class="btn-page" onclick="changePage(-1)">Sebelumnya</button>
+            <button id="nextBtn" class="btn-page" onclick="changePage(1)">Selanjutnya</button>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
   </div>
 
   <!-- Overlay & Drawer Detail Pelanggan -->
   <div id="drawerOverlay" class="drawer-overlay" onclick="closeDrawer()"></div>
-  <div id="customerDrawer" class="drawer">
+  <aside id="customerDrawer" class="drawer-panel">
     <div class="drawer-header">
       <h3>Detail Pelanggan</h3>
-      <button class="close-btn" onclick="closeDrawer()">&times;</button>
+      <button class="btn-close" onclick="closeDrawer()">&times;</button>
     </div>
     <div class="drawer-body">
-      <div class="detail-group">
-        <label>ID Pelanggan</label>
+      <div class="detail-item">
+        <label>ID PELANGGAN</label>
         <span id="detailId">-</span>
       </div>
-      <div class="detail-group">
-        <label>Nama Lengkap</label>
+      <div class="detail-item">
+        <label>NAMA LENGKAP</label>
         <span id="detailNama">-</span>
       </div>
-      <div class="detail-group">
-        <label>Nomor HP</label>
+      <div class="detail-item">
+        <label>NOMOR HP</label>
         <span id="detailHp">-</span>
       </div>
-      <div class="detail-group">
-        <label>Email</label>
+      <div class="detail-item">
+        <label>EMAIL</label>
         <span id="detailEmail">-</span>
       </div>
-      <div class="detail-group">
-        <label>Status</label>
+      <div class="detail-item">
+        <label>STATUS</label>
         <div id="detailStatusBadge"></div>
       </div>
-      <div class="detail-group">
-        <label>Tanggal Bergabung</label>
-        <span id="detailTanggal">12 Januari 2025</span>
-      </div>
     </div>
-  </div>
+  </aside>
 
   <!-- Modal Edit Pelanggan -->
-  <div id="editModal" class="modal">
-    <div class="modal-content">
+  <div id="editModal" class="modal-overlay">
+    <div class="modal-card">
       <h3>Edit Data Pelanggan</h3>
       <form id="editForm" onsubmit="saveCustomer(event)">
         <input type="hidden" id="editId">
         <div class="form-group">
-          <label for="editNama">Nama Pelanggan</label>
-          <input type="text" id="editNama" required>
+          <label>Nama Pelanggan</label>
+          <input type="text" id="editNama" required class="input-control">
         </div>
         <div class="form-group">
-          <label for="editHp">Nomor HP</label>
-          <input type="text" id="editHp" required>
+          <label>Nomor HP</label>
+          <input type="text" id="editHp" required class="input-control">
         </div>
         <div class="form-group">
-          <label for="editEmail">Email</label>
-          <input type="email" id="editEmail" required>
+          <label>Email</label>
+          <input type="email" id="editEmail" required class="input-control">
         </div>
         <div class="form-group">
-          <label for="editStatus">Status</label>
-          <select id="editStatus">
+          <label>Status</label>
+          <select id="editStatus" class="input-control">
             <option value="Aktif">Aktif</option>
             <option value="VIP">VIP</option>
             <option value="Non-aktif">Non-aktif</option>
           </select>
         </div>
-        <div class="form-actions">
-          <button type="button" class="page-btn" onclick="closeEditModal()">Batal</button>
-          <button type="submit" class="btn-action btn-edit" style="padding: 10px 16px;">Simpan</button>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeEditModal()">Batal</button>
+          <button type="submit" class="btn-primary">Simpan</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Pemanggilan Berkas JS Terpisah -->
-  <script src="app.js"></script>
+  <!-- Memanggil Script JS -->
+  <script src="script.js"></script>
 </body>
 </html>
