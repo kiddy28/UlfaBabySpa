@@ -1430,3 +1430,150 @@ document.addEventListener("DOMContentLoaded", () => {
     if (clockEl) clockEl.textContent = new Date().toLocaleTimeString("id-ID");
   }, 1000);
 });
+
+// Mock Data Pelanggan
+let customers = [
+  { id: 'CUST-001', nama: 'Budi Santoso', hp: '081234567890', email: 'budi@gmail.com', status: 'Aktif' },
+  { id: 'CUST-002', nama: 'Siti Rahma', hp: '082198765432', email: 'siti@yahoo.com', status: 'VIP' },
+  { id: 'CUST-003', nama: 'Andi Wijaya', hp: '085712344321', email: 'andi@gmail.com', status: 'Non-aktif' },
+  { id: 'CUST-004', nama: 'Dewi Lestari', hp: '081399887766', email: 'dewi@outlook.com', status: 'Aktif' },
+  { id: 'CUST-005', nama: 'Rian Hidayat', hp: '087811223344', email: 'rian@gmail.com', status: 'VIP' },
+  { id: 'CUST-006', nama: 'Eka Putri', hp: '089655443322', email: 'eka@gmail.com', status: 'Aktif' },
+  { id: 'CUST-007', nama: 'Fajar Pratama', hp: '081122334455', email: 'fajar@yahoo.com', status: 'Non-aktif' }
+];
+
+let filteredData = [...customers];
+let currentPage = 1;
+const rowsPerPage = 5;
+
+// Render Data Tabel
+function renderTable() {
+  const tbody = document.getElementById('customerTableBody');
+  tbody.innerHTML = '';
+
+  const start = (currentPage - 1) * rowsPerPage;
+  const end = start + rowsPerPage;
+  const paginatedData = filteredData.slice(start, end);
+
+  if (paginatedData.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Data tidak ditemukan.</td></tr>`;
+    updatePaginationInfo(0);
+    return;
+  }
+
+  paginatedData.forEach(c => {
+    const tr = document.createElement('tr');
+    tr.onclick = (e) => {
+      // Mencegah drawer terbuka saat tombol edit diklik
+      if (!e.target.classList.contains('btn-edit')) {
+        openDrawer(c);
+      }
+    };
+
+    tr.innerHTML = `
+      <td>${c.id}</td>
+      <td><strong>${c.nama}</strong></td>
+      <td>${c.hp}</td>
+      <td>${c.email}</td>
+      <td>${getStatusBadge(c.status)}</td>
+      <td>
+        <button class="btn-action btn-edit" onclick="openEditModal('${c.id}')">Edit</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  updatePaginationInfo(filteredData.length);
+}
+
+// Badge Status Helper
+function getStatusBadge(status) {
+  if (status === 'Aktif') return `<span class="badge badge-aktif">Aktif</span>`;
+  if (status === 'VIP') return `<span class="badge badge-vip">VIP</span>`;
+  return `<span class="badge badge-nonaktif">Non-aktif</span>`;
+}
+
+// Search & Filter Real-time
+function handleFilter() {
+  const keyword = document.getElementById('searchInput').value.toLowerCase();
+  const status = document.getElementById('statusFilter').value;
+
+  filteredData = customers.filter(c => {
+    const matchSearch = c.nama.toLowerCase().includes(keyword) ||
+                        c.hp.includes(keyword) ||
+                        c.email.toLowerCase().includes(keyword);
+    const matchStatus = status === '' || c.status === status;
+    return matchSearch && matchStatus;
+  });
+
+  currentPage = 1;
+  renderTable();
+}
+
+// Pagination Controls
+function updatePaginationInfo(totalItems) {
+  const totalPages = Math.ceil(totalItems / rowsPerPage) || 1;
+  document.getElementById('pageInfo').innerText = `Halaman ${currentPage} dari ${totalPages}`;
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = currentPage >= totalPages;
+}
+
+function changePage(direction) {
+  currentPage += direction;
+  renderTable();
+}
+
+// Drawer Slide-Over Controls
+function openDrawer(customer) {
+  document.getElementById('detailId').innerText = customer.id;
+  document.getElementById('detailNama').innerText = customer.nama;
+  document.getElementById('detailHp').innerText = customer.hp;
+  document.getElementById('detailEmail').innerText = customer.email;
+  document.getElementById('detailStatusBadge').innerHTML = getStatusBadge(customer.status);
+
+  document.getElementById('drawerOverlay').style.display = 'block';
+  document.getElementById('customerDrawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').style.display = 'none';
+  document.getElementById('customerDrawer').classList.remove('open');
+}
+
+// Modal Edit Controls
+function openEditModal(id) {
+  const customer = customers.find(c => c.id === id);
+  if (!customer) return;
+
+  document.getElementById('editId').value = customer.id;
+  document.getElementById('editNama').value = customer.nama;
+  document.getElementById('editHp').value = customer.hp;
+  document.getElementById('editEmail').value = customer.email;
+  document.getElementById('editStatus').value = customer.status;
+
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+function saveCustomer(e) {
+  e.preventDefault();
+  const id = document.getElementById('editId').value;
+  const index = customers.findIndex(c => c.id === id);
+
+  if (index !== -1) {
+    customers[index].nama = document.getElementById('editNama').value;
+    customers[index].hp = document.getElementById('editHp').value;
+    customers[index].email = document.getElementById('editEmail').value;
+    customers[index].status = document.getElementById('editStatus').value;
+
+    handleFilter();
+    closeEditModal();
+    alert('Data pelanggan berhasil diperbarui!');
+  }
+}
+
+// Jalankan fungsi awal saat halaman dimuat
+renderTable();
